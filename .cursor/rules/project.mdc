@@ -4,27 +4,38 @@ alwaysApply: true
 # Jelly Brawl 项目规则
 
 ## 技术约束
-- 纯原生 JavaScript(ES Modules)+ Canvas 2D,不用任何构建工具,不用 npm,不用框架
-- 第三方库只能用 CDN,且必须固定到精确版本号
-- 必须能直接用 `python -m http.server` 本地运行,并能原样部署到 GitHub Pages
-- 所有路径使用相对路径(GitHub Pages 会部署在子路径下)
-- 目标设备:手机竖屏优先,iOS Safari 与 Android Chrome 都要正常
+- 客户端:React + TypeScript + Vite + Three.js(apps/client)
+- 联机服务器:Colyseus + Node.js 22,用 tsx 直接运行 TypeScript(apps/server)
+- npm 依赖必须固定到精确版本号(不用 ^ 或 ~),提交 package-lock.json
+- Vite 配置 `base: './'`,所有资源用相对路径(GitHub Pages 部署在子路径下)
+- 目标设备:手机横屏优先,iOS Safari 与 Android Chrome 都要正常
+- 大于几 MB 的原始素材(如 68 MB 的原始 glb、素材 zip)不进仓库
 
 ## 代码结构
-- /index.html, /manifest.json, /sw.js, /icons/
-- /src/main.js(入口)、game.js(主循环)、physics.js、input.js、render.js
-- /src/net.js(联机)、events.js(随机事件)、items.js(道具)、ui.js、audio.js
+- apps/client/src/pages:各页面(Loading、Lobby、Room、Battle、Skin、Result)
+- apps/client/src/components:通用组件;src/state:全局状态与本地存储
+- apps/client/src/game:模拟(sim、physics、ai、rng、config)与 Three.js 渲染
+- apps/client/src/net:protocol.ts(客户端与服务器共用)、session.ts(连接服务器)
+- apps/server/src:Colyseus 房间;直接引用 client 的 sim/physics/protocol,不复制
+- 根目录旧版原生 JS(index.html、src/*.js)只作参考,发布在 /legacy/,不再改动
 - 每个文件只负责一件事,单文件不超过 300 行
 
 ## 架构原则
-- 游戏逻辑与渲染分离:game state 是纯数据对象,render 只读 state
+- 游戏逻辑与渲染分离:MatchState 是纯数据对象,渲染只读 state
 - 固定时间步长物理(60Hz),渲染用 requestAnimationFrame 插值
-- 所有随机必须使用带种子的随机数(src/rng.js),保证联机一致
-- 房主权威:只有房主运行物理,其他玩家只发送输入、接收状态
-- 所有数值(体型速度、撞击力、缩圈时间等)集中放在 src/config.js
+- 所有随机必须使用带种子的随机数(game/rng.ts)
+- 服务器权威:联机时只有服务器运行物理,客户端只发送输入、接收快照
+- sim / physics / ai / protocol 不能依赖浏览器或 three,保证服务器能直接运行
+- 所有数值(体型速度、撞击力、缩圈时间、联机频率等)集中放在 game/config.ts
+
+## 发布
+- 推送 main 后 GitHub Actions 构建 apps/client 发布到 Pages,旧版放 /legacy/
+- 联机服务器部署在 Render(render.yaml),地址由仓库变量 SERVER_URL 注入
+- 提交信息使用 conventional commits(feat、fix、chore、docs 等)
 
 ## 工作方式
 - 每次只完成我当前要求的阶段,不要提前实现后面的功能
 - 完成后告诉我:改了哪些文件、如何本地测试、有哪些已知问题
 - 不确定的地方先问我,不要擅自改变玩法设计
+- 不得声称尚未实现的功能(排行榜、奖励等)已经可用
 - 代码加简短中文注释
