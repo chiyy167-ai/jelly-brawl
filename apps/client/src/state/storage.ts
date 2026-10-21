@@ -53,6 +53,25 @@ export function saveName(name: string): void {
   }
 }
 
+const LOADED_KEY = 'jelly-brawl.loaded';
+
+/** 这台设备以前是否完整加载过一次（用来决定要不要提示"首次加载较慢"） */
+export function hasLoadedBefore(): boolean {
+  try {
+    return localStorage.getItem(LOADED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function markLoaded(): void {
+  try {
+    localStorage.setItem(LOADED_KEY, '1');
+  } catch {
+    // 忽略
+  }
+}
+
 export function loadHistory(): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);

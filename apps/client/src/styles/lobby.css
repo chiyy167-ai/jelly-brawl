@@ -42,6 +42,8 @@
 /* 提示放在页面坐标里，屏幕特别宽时也不会被裁掉 */
 .loading-tip { left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; font-size: clamp(13px, calc(var(--u) * 19), 26px);
   top: min(calc((100dvh - var(--art-h)) * 0.6 + var(--art-h) * 0.905), calc(100dvh - 2.2em - var(--safe-b))); }
+/* 首次加载提示比较长，允许换行 */
+.loading-tip.first { white-space: normal; width: max-content; max-width: 92vw; text-align: center; justify-content: center; }
 .loading-error { position: absolute; z-index: 3; left: 50%; top: 84%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 12px;
   padding: 10px 16px; border-radius: 16px; background: rgba(29, 42, 110, 0.92); font-weight: 900; white-space: nowrap; }
 /* 竖屏：插画宽度取屏宽的 1.8 倍（Logo、角色和进度条都能放下），上下用模糊图补满；百分比挪进进度条中间 */

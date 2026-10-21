@@ -4,6 +4,7 @@ import bgUrl from '../assets/loading-bg.jpg';
 import { loadAssets, loadPreviewJelly, type JellyTemplate, type LoadProgress } from '../game/assets';
 import { LoadingJellies } from '../game/loadingJellies';
 import { useApp } from '../state/AppState';
+import { hasLoadedBefore, markLoaded } from '../state/storage';
 
 function waitForImage(src: string, timeoutMs: number): Promise<void> {
   return new Promise((resolve) => {
@@ -23,6 +24,7 @@ export function LoadingPage() {
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [tip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)]);
+  const [firstTime] = useState(() => !hasLoadedBefore());
   const [preview, setPreview] = useState<JellyTemplate | null>(null);
   const [done, setDone] = useState(false);
   const stageHost = useRef<HTMLDivElement>(null);
@@ -39,6 +41,7 @@ export function LoadingPage() {
       .then(() => loadAssets((next) => alive && setP(next)))
       .then(() => {
         if (!alive) return;
+        markLoaded();
         setDone(true);
         // 让玩家看一会儿庆祝再进入大厅
         timer = window.setTimeout(() => dispatch({ type: 'loaded' }), 1100);
@@ -91,7 +94,11 @@ export function LoadingPage() {
           <p className={`loading-bubble ${preview ? '' : 'static'}`} ref={bubble}>{preview ? '' : p.label}</p>
         </div>
       </div>
-      {!error && <p className="loading-tip"><span aria-hidden>💡</span>{tip}</p>}
+      {!error && (firstTime ? (
+        <p className="loading-tip first"><span aria-hidden>⏳</span>首次打开要下载约 2 MB 资源，可能稍慢，请耐心等待～下次打开会快很多</p>
+      ) : (
+        <p className="loading-tip"><span aria-hidden>💡</span>{tip}</p>
+      ))}
     </div>
   );
 }

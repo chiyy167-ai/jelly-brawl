@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react';
 
 const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse)';
 
+// 微信 / QQ 等 App 内置浏览器调用全屏 + 锁定方向会闪退，只能提示手动旋转
+const IN_APP = /MicroMessenger|QQ\/|WeiBo|DingTalk|AlipayClient/i.test(navigator.userAgent);
+const IS_WECHAT = /MicroMessenger/i.test(navigator.userAgent);
+
 type LockableOrientation = ScreenOrientation & { lock?: (o: 'landscape') => Promise<void> };
 
 async function goLandscape(): Promise<boolean> {
@@ -26,7 +30,7 @@ async function goLandscape(): Promise<boolean> {
 export function RotateHint() {
   // 只在打开页面时判断一次
   const [open, setOpen] = useState(() => window.matchMedia(PORTRAIT_PHONE).matches);
-  const [manual, setManual] = useState(false);
+  const [manual, setManual] = useState(IN_APP);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -56,12 +60,20 @@ export function RotateHint() {
         <h2 id="rotate-title">横屏体验更好！</h2>
         <p>果冻擂台是横屏游戏，横过来视野更大、操作更顺手。</p>
         {manual && (
-          <p className="rotate-manual">当前浏览器不支持自动切换（如 iPhone Safari），请关闭手机的“竖排方向锁定”，然后把手机横过来。</p>
+          <p className="rotate-manual">
+            {IS_WECHAT
+              ? '微信里不能自动切换横屏。请关闭手机的“竖排方向锁定”，然后把手机横过来；也可以点右上角「…」选择用浏览器打开。'
+              : '当前浏览器不支持自动切换（如 iPhone Safari），请关闭手机的“竖排方向锁定”，然后把手机横过来。'}
+          </p>
         )}
-        <button className="btn btn-yellow btn-big" onClick={rotate} disabled={busy}>
-          {manual ? '再试一次' : '切换横屏'}
-        </button>
-        <button className="rotate-skip" onClick={() => setOpen(false)}>继续竖屏玩</button>
+        {IN_APP ? (
+          <button className="btn btn-yellow btn-big" onClick={() => setOpen(false)}>知道了</button>
+        ) : (
+          <button className="btn btn-yellow btn-big" onClick={rotate} disabled={busy}>
+            {manual ? '再试一次' : '切换横屏'}
+          </button>
+        )}
+        {!IN_APP && <button className="rotate-skip" onClick={() => setOpen(false)}>继续竖屏玩</button>}
       </div>
     </div>
   );
