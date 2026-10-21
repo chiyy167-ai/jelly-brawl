@@ -4,6 +4,7 @@ import bgUrl from '../assets/loading-bg.jpg';
 import { loadAssets, loadPreviewJelly, type JellyTemplate, type LoadProgress } from '../game/assets';
 import { LoadingJellies } from '../game/loadingJellies';
 import { useApp } from '../state/AppState';
+import { rememberLoadedFiles } from '../state/offlineCache';
 import { hasLoadedBefore, markLoaded } from '../state/storage';
 
 function waitForImage(src: string, timeoutMs: number): Promise<void> {
@@ -42,6 +43,7 @@ export function LoadingPage() {
       .then(() => {
         if (!alive) return;
         markLoaded();
+        rememberLoadedFiles();
         setDone(true);
         // 让玩家看一会儿庆祝再进入大厅
         timer = window.setTimeout(() => dispatch({ type: 'loaded' }), 1100);

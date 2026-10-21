@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { registerOfflineCache } from './state/offlineCache';
 import './styles/base.css';
 import './styles/lobby.css';
 import './styles/battle.css';
@@ -11,3 +12,5 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+registerOfflineCache();
