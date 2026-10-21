@@ -5,15 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
     <meta name="theme-color" content="#3aa8ff" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <!-- 启动插画最先下载，脚本还没到时就能显示加载页 -->
+    <link rel="preload" as="image" href="/src/assets/loading-bg.jpg" />
     <title>Jelly Brawl 果冻擂台</title>
     <style>
-      /* 脚本下载完之前先显示天空色和提示，避免慢网下白屏 */
-      html, body { margin: 0; height: 100%; background: linear-gradient(180deg, #3d9cff, #c4ecff); }
-      .boot { position: fixed; inset: 0; display: grid; place-items: center; color: #fff; font: 900 20px system-ui, sans-serif; text-shadow: 0 2px 0 rgba(20, 40, 120, 0.5); }
+      /* 样式表到之前先显示天空色，避免慢网下白屏 */
+      html, body { margin: 0; height: 100%; background: #5fb6ff; }
+      /* 启动插画的 80×45 缩略图（约 3 KB），大图下载完之前先垫在下面 */
+      :root { --art-thumb: url(data:image/jpeg;base64,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); }
     </style>
   </head>
   <body>
-    <div id="root"><div class="boot">果冻擂台 正在启动…</div></div>
+    <!-- 和 LoadingPage 同样的结构：游戏脚本下载期间先显示插画和进度条，脚本到了 React 会原地替换 -->
+    <div id="root">
+      <div class="page loading-page">
+        <div class="loading-art">
+          <div class="loading-bar progress-unknown"><div class="progress-fill" style="width: 100%"></div></div>
+        </div>
+        <p class="loading-tip first" id="boot-tip">正在启动游戏…</p>
+      </div>
+    </div>
+    <script>
+      try {
+        if (localStorage.getItem('jelly-brawl.loaded') !== '1') {
+          document.getElementById('boot-tip').textContent = '⏳ 首次打开要下载约 2 MB 资源，可能稍慢，请耐心等待～下次打开会快很多';
+        }
+      } catch (e) {}
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

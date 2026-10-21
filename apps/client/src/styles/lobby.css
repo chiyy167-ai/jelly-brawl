@@ -12,9 +12,11 @@
 @media (min-aspect-ratio: 16/9) {
   .loading-page { --art-w: 177.78vh; --art-h: 100vh; --art-w: 177.78dvh; --art-h: 100dvh; }
 }
-.loading-page::before { content: ''; position: absolute; inset: -40px; background: url('../assets/loading-bg.jpg') center / cover; filter: blur(18px) brightness(0.95); }
+/* --art-thumb 是 index.html 里内联的缩略图，大图没到之前先显示它 */
+.loading-page::before { content: ''; position: absolute; inset: -40px; filter: blur(18px) brightness(0.95);
+  background: url('../assets/loading-bg.jpg') center / cover, var(--art-thumb, none) center / cover; }
 .loading-art { position: absolute; left: 50%; top: calc((100dvh - var(--art-h)) * 0.6); width: var(--art-w); height: var(--art-h); transform: translateX(-50%);
-  background: url('../assets/loading-bg.jpg') center / 100% 100% no-repeat; }
+  background: url('../assets/loading-bg.jpg') center / 100% 100% no-repeat, var(--art-thumb, none) center / 100% 100% no-repeat; }
 .progress-num, .loading-tip { position: absolute; margin: 0; font-weight: 900; color: #fff; white-space: nowrap;
   text-shadow: 0 0 3px #1b2a78, 0 2px 0 #1b2a78, 2px 0 0 #1b2a78, -2px 0 0 #1b2a78, 0 -2px 0 #1b2a78; }
 /* 3D 果冻小剧场的画布范围 = 插画上 x 200~774、y 270~530（和 loadingJellies.ts 的 REGION 一致） */

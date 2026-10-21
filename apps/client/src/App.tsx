@@ -42,18 +42,12 @@ function NetBridge() {
   return null;
 }
 
-/** 先直接进加载页，加载完再提示横屏，避免一打开就被弹窗挡住 */
-function RotateGate() {
-  const { state } = useApp();
-  return state.page === 'loading' ? null : <RotateHint />;
-}
-
 export default function App() {
   return (
     <AppProvider>
       <Pages />
       <NetBridge />
-      <RotateGate />
+      <RotateHint />
     </AppProvider>
   );
 }
