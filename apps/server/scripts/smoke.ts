@@ -46,5 +46,7 @@ const timer = setInterval(() => {
 const results = await Promise.all(rooms.map((r) => wait<{ ranking: { name: string; rank: number; score: number }[] }>(r, 'result')));
 clearInterval(timer);
 console.log('快照数', snaps, '结算：', results[0].ranking.map((e) => `${e.rank}.${e.name}(${e.score})`).join(' '));
+rooms.forEach((r) => (r.reconnection.enabled = false));
 await Promise.all(rooms.map((r) => r.leave()));
+console.log('全部离开房间');
 process.exit(0);

@@ -101,6 +101,8 @@ class NetSession {
 
   private bind(room: Room): void {
     this.room = room;
+    // 服务器不支持断线重连；Render 的代理还会吞掉正常离开的关闭码，开着会让 SDK 一直重试
+    room.reconnection.enabled = false;
     room.onMessage('lobby', (info: LobbyInfo) => {
       this.lobby = info;
       this.changed();
@@ -137,7 +139,8 @@ class NetSession {
     const room = this.room;
     if (!room) return;
     this.reset();
-    await room.leave().catch(() => undefined);
+    // 最多等 1 秒，网络不好时也不卡住界面
+    await Promise.race([room.leave().catch(() => undefined), new Promise((ok) => setTimeout(ok, 1000))]);
   }
 
   sendProfile(p: Profile): void {
