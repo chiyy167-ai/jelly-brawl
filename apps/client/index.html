@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#3aa8ff" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>Jelly Brawl 果冻擂台</title>
+    <style>
+      /* 脚本下载完之前先显示天空色和提示，避免慢网下白屏 */
+      html, body { margin: 0; height: 100%; background: linear-gradient(180deg, #3d9cff, #c4ecff); }
+      .boot { position: fixed; inset: 0; display: grid; place-items: center; color: #fff; font: 900 20px system-ui, sans-serif; text-shadow: 0 2px 0 rgba(20, 40, 120, 0.5); }
+    </style>
+  </head>
+  <body>
+    <div id="root"><div class="boot">果冻擂台 正在启动…</div></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

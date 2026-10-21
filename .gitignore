@@ -1,2 +1,7 @@
 .DS_Store
 Thumbs.db
+node_modules/
+dist/
+# 原始大模型和素材包，太大不进仓库
+2b33e7661b753dfea12ffdff5f8123f2.glb
+jelly_brawl_page_assets.zip

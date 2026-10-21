@@ -1,77 +1,88 @@
 # Jelly Brawl《果冻擂台》
 
-竖屏果冻对战。在会缩小的圆形平台上吃果冻块、蓄力冲撞，把别人挤下去。支持单人练习和 2–6 人 WebRTC 联机。玩法细节见 [GAME_DESIGN.md](GAME_DESIGN.md)。
+横屏 3D 果冻对战。在会缩小的平台上吃果冻块、蓄力冲撞，把别人挤下去。支持单机和最多 4 人联机（不足 4 人由电脑补位）。
+
+| 目录 | 内容 |
+| --- | --- |
+| `apps/client` | 新版客户端：React + TypeScript + Vite + Three.js |
+| `apps/server` | 联机服务器：Colyseus，服务器权威，跑和客户端同一套物理 |
+| 根目录 `index.html`、`src/` 等 | 旧版原生 JS 竖屏版，网站上放在 `/legacy/` |
 
 ## 本地运行
 
-在项目目录执行：
+需要 Node.js 20 以上。开两个终端：
 
 ```bash
-python -m http.server 8080
+# 终端 1：联机服务器（端口 2567）
+cd apps/server
+npm ci
+npm start
+
+# 终端 2：客户端（端口 5174）
+cd apps/client
+npm ci
+npx vite --host --port 5174
 ```
 
-电脑打开 `http://127.0.0.1:8080/`。不要直接双击 `index.html`，模块脚本和 Service Worker 都需要这个本地服务器。
+电脑打开 `http://127.0.0.1:5174/`。
 
-手机和电脑连同一个 Wi-Fi 后，用电脑的局域网地址访问，例如 `http://192.168.1.20:8080/`。Windows 可在终端运行 `ipconfig`，看当前 Wi-Fi 的 IPv4 地址。若手机打不开，允许 Python 通过专用网络防火墙。
+### 同一个 Wi-Fi 下用 4 部手机测试
 
-地址栏加上 `?debug=1` 会显示右上角调参面板。`?lag=150` 会把收到的联机快照延迟 150 毫秒，用来看插值是否抖动。
+1. Windows 运行 `ipconfig`，记下 Wi-Fi 的 IPv4 地址，例如 `192.168.4.157`。
+2. 4 部手机都打开 `http://192.168.4.157:5174/`（客户端会自动连同一台电脑的 2567 端口）。
+3. 第一部手机：多人对战 → 创建房间，点「分享 / 复制邀请链接」发给其他人，或者把 4 位房间号告诉他们。
+4. 其他手机：多人对战 → 输入房间号 → 加入。
+5. 房主点「开始游戏」。
+6. 打不开时，在 Windows 防火墙里允许 Node.js 访问「专用网络」。
+
+### 没有 4 部手机时
+
+```bash
+cd apps/server
+npm run smoke              # 自动模拟 4 个玩家打完一局
+npm run bots ABCD 3        # 往房间 ABCD 里加 3 个乱跑的测试玩家
+```
+
+## 发布到网上
+
+需要两部分：GitHub Pages 放网页，Render 跑联机服务器。
+
+### 1. 联机服务器（Render，免费）
+
+1. 用 GitHub 账号登录 [Render](https://render.com)。
+2. 点 New → Blueprint，选 `jelly-brawl` 仓库。Render 会读取根目录的 `render.yaml`，点 Apply。
+3. 部署完成后复制服务地址，例如 `https://jelly-brawl-server.onrender.com`。浏览器打开它，显示空白页或 OK，不报错就说明服务器在运行。
+
+免费版 15 分钟没人用会休眠，第一次连接要等 30–50 秒唤醒。联机弹窗提示「连不上」时，等一会儿再点一次。
+
+### 2. 告诉网页服务器地址
+
+GitHub 仓库 → Settings → Secrets and variables → Actions → Variables → New repository variable：
+
+- Name：`SERVER_URL`
+- Value：`wss://jelly-brawl-server.onrender.com`（把 `https` 换成 `wss`）
+
+然后到 Actions 页面重新运行「Deploy GitHub Pages」。
+
+临时换服务器也可以不重新发布：网址后面加 `?server=wss://...`，手机会记住这个地址。
+
+### 3. 网页（GitHub Pages）
+
+推送到 `main` 后，`.github/workflows/pages.yml` 会自动构建 `apps/client` 并发布：
+
+- 新版：`https://<用户名>.github.io/jelly-brawl/`
+- 旧版：`https://<用户名>.github.io/jelly-brawl/legacy/`
+
+仓库 Settings → Pages → Build and deployment 要选 GitHub Actions。
 
 ## 操作
 
-- 左半屏按住拖动是摇杆。电脑用 WASD 或方向键。
-- 右下角「冲」，或键盘空格：按住蓄力，松开冲刺。
-- 淘汰后变成幽灵，点平台可放布丁。
-
-## 手感检查清单
-
-- 摇杆在按下的位置出现，松手后角色会滑一小段再停下。
-- 摇杆和「冲」可以同时按住，左边移动不会把右边按钮取消。
-- 按住「冲」时明显变慢，头顶红条在 1.2 秒时停住，周围红光变强。
-- 不推摇杆松手时，沿上次朝向冲出去。
-- 连按空格，第二次在约 0.4 秒内没有冲刺。
-- 全速撞上静止靶子或对手时，双方都被推开，重击有短暂停顿和画面震动。
-- 吃到果冻块会变大，被重击会变小并掉出一块。
-- 平台边缘站太出去会被淘汰，幽灵不能再撞人。
-
-## 部署到 GitHub Pages
-
-`.github/workflows/pages.yml` 会在 `main` 分支更新时发布当前目录。仓库 Settings → Pages → Build and deployment 选择 GitHub Actions。
-
-项目页地址是 `https://<用户名>.github.io/jelly-brawl/`。资源都使用相对路径，可以放在这个子路径下。
-
-更新缓存时，把 `sw.js` 第一处 `jelly-brawl-v1` 改成新的名字再推送。玩家下次打开会看到「点击更新」。一行替换示例：
-
-```bash
-python -c "from pathlib import Path; p=Path('sw.js'); p.write_text(p.read_text(encoding='utf-8').replace('jelly-brawl-v1','jelly-brawl-v2',1), encoding='utf-8')"
-```
-
-## 安装到手机
-
-iOS Safari：用上面的地址打开游戏，点分享，选「添加到主屏幕」。图标使用 `icons/apple-touch-icon.png`。iOS 不支持震动，游戏会自动跳过。
-
-Android Chrome：打开游戏，菜单选「安装应用」或「添加到主屏幕」。需要 HTTPS，所以用 GitHub Pages 的地址，而不是局域网的 `http://`。
-
-## 图标
-
-`icons/icon.svg` 是源文件。仓库里已经带好 192、512、maskable 和 180 的 PNG。若要重做：
-
-```bash
-magick icons/icon.svg -resize 192x192 icons/icon-192.png
-magick icons/icon.svg -resize 512x512 icons/icon-512.png
-magick icons/icon.svg -resize 180x180 icons/apple-touch-icon.png
-```
-
-maskable 图标需要四周留出纯色边，不要把果冻画到画布边缘。
-
-## PWA 自查
-
-已具备：manifest 名称、standalone、竖屏、主题色、192/512 图标、maskable 图标、Service Worker 离线缓存、`theme-color`、苹果触摸图标和可安装的相对路径。
-
-本地 `http://` 不能拿到完整的 Lighthouse PWA 安装分，因为规范要求 HTTPS。部署到 GitHub Pages 后再跑 Lighthouse。第三方 Trystero 和二维码库来自 CDN，离线时大厅二维码和联机会不可用，单机画面仍可从缓存打开。
+- 左下摇杆移动，电脑用 WASD 或方向键。
+- 右下按钮或空格：按住蓄力，松开冲撞。
 
 ## 已知限制
 
-- 默认只有 STUN。复杂网络需要按 [NETWORK_NOTES.md](NETWORK_NOTES.md) 加 TURN。
-- 客户端不做位置预测，延迟高时会晚一点跟着房主走；`?lag=150` 可在本机看这个效果。
-- 房主掉线会回到大厅，不会移交主机。
-- 音效是 WebAudio 合成的，iOS 要先点一下画面才出声。
+- 联机不做断线重连。对局中掉线，你的果冻会交给电脑，下一局要重新加入。
+- 对局开始后房间会锁住，新玩家要等这一局结束才能进。
+- 宝石、金币、排行榜还没有接入。
+- 原始大模型 `2b33e7661b753dfea12ffdff5f8123f2.glb`（68 MB）和 `jelly_brawl_page_assets.zip` 没有进仓库；游戏实际用的是压缩后的 `apps/client/public/models/` 里的模型。

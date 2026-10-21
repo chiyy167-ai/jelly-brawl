@@ -1,0 +1,116 @@
+/** 02 游戏大厅：开始游戏、单人练习、多人入口、皮肤、排行榜、每日奖励、新手教程。 */
+import { useMemo, useState } from 'react';
+import { IconBook, IconCoin, IconCrown, IconGear, IconGem, IconGift, IconPlay, IconShirt, IconUser, IconUsers } from '../components/icons';
+import { JellyStageView } from '../components/JellyStageView';
+import { LobbyModals, type LobbyModal } from '../components/LobbyModals';
+import { Logo } from '../components/Logo';
+import { SkyBackground } from '../components/SkyBackground';
+import { getSkin } from '../data/skins';
+import { renderThumbnails } from '../game/stage';
+import { CODE_LENGTH } from '../net/protocol';
+import { useApp } from '../state/AppState';
+
+const VIEW = { y: 3.4, z: 12, lookY: 0.6, fov: 35, floor: 5.4 };
+
+/** 分享链接里的 ?room=房间号，只用一次 */
+function takeRoomParam(): string {
+  const url = new URL(location.href);
+  const code = (url.searchParams.get('room') ?? '').toUpperCase().slice(0, CODE_LENGTH);
+  if (code) {
+    url.searchParams.delete('room');
+    history.replaceState(null, '', url);
+  }
+  return code;
+}
+
+export function LobbyPage() {
+  const { state, dispatch } = useApp();
+  const [roomCode] = useState(takeRoomParam);
+  const [modal, setModal] = useState<LobbyModal>(roomCode ? 'multi' : null);
+  const skin = getSkin(state.skinId);
+  const avatar = useMemo(() => renderThumbnails([state.skinId])[state.skinId], [state.skinId]);
+  // 玩家选中的皮肤站中间，旁边是几只装饰果冻
+  const items = useMemo(() => {
+    const others = ['blue', 'cool', 'wizard'].filter((id) => id !== state.skinId);
+    return [
+      { skinId: state.skinId, x: -0.4, z: 0, size: 3.1, yaw: 0.25 },
+      { skinId: others[0], x: 2.4, z: 0.6, size: 1.6, yaw: -0.3 },
+      { skinId: others[1], x: 4.1, z: -0.2, size: 1.4, yaw: -0.5 },
+      { skinId: others[2] ?? 'sprout', x: -3.6, z: 0.3, size: 1.3, yaw: 0.5 },
+    ];
+  }, [state.skinId]);
+
+  return (
+    <div className="page lobby-page">
+      <SkyBackground />
+      <JellyStageView className="lobby-stage" items={items} view={VIEW} />
+
+      <header className="lobby-top">
+        <div className="lobby-left">
+          <Logo size="small" />
+          <button className="profile-card" onClick={() => dispatch({ type: 'openSkins' })} aria-label="当前角色，点击换皮肤">
+            <img src={avatar} alt="" />
+            <div>
+              <b>Lv.1</b>
+              <small>{skin.name}</small>
+              <div className="xp-bar"><i style={{ width: '0%' }} /><span>0/100</span></div>
+            </div>
+          </button>
+        </div>
+        <div className="currency-row">
+          <button className="currency" onClick={() => setModal('shop')}><IconGem /><span>0</span><em>+</em></button>
+          <button className="currency" onClick={() => setModal('shop')}><IconCoin /><span>0</span><em>+</em></button>
+          <button className="round-btn" onClick={() => setModal('settings')} aria-label="设置"><IconGear /></button>
+        </div>
+      </header>
+
+      <aside className="lobby-side">
+        <button className="side-btn" onClick={() => setModal('daily')}>
+          <IconGift size={40} />
+          <span>每日奖励</span>
+        </button>
+        <button className="side-btn" onClick={() => setModal('tutorial')}>
+          <i className="badge-new">New</i>
+          <IconBook size={40} />
+          <span>新手教程</span>
+        </button>
+      </aside>
+
+      <footer className="lobby-bottom">
+        <div className="lobby-group">
+          <button className="tile-btn" onClick={() => dispatch({ type: 'startBattle', mode: 'practice' })}>
+            <IconUser />
+            <span>单人模式</span>
+          </button>
+          <button className="tile-btn" onClick={() => setModal('multi')}>
+            <IconUsers />
+            <span>多人对战</span>
+          </button>
+        </div>
+        <button className="start-btn" onClick={() => dispatch({ type: 'startBattle', mode: 'match' })}>
+          <IconPlay />
+          <span>开始游戏</span>
+        </button>
+        <div className="lobby-group">
+          <button className="tile-btn" onClick={() => dispatch({ type: 'openSkins' })}>
+            <IconShirt />
+            <span>果冻皮肤</span>
+          </button>
+          <button className="tile-btn" onClick={() => setModal('rank')}>
+            <IconCrown />
+            <span>排行榜</span>
+          </button>
+        </div>
+      </footer>
+
+      {state.notice && (
+        <div className="lobby-notice" role="status">
+          <span>{state.notice}</span>
+          <button onClick={() => dispatch({ type: 'clearNotice' })} aria-label="关闭">×</button>
+        </div>
+      )}
+
+      <LobbyModals which={modal} onClose={() => setModal(null)} roomCode={roomCode} />
+    </div>
+  );
+}

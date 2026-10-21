@@ -1,0 +1,27 @@
+{
+  "name": "jelly-brawl-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Jelly Brawl 联机服务器（Colyseus）",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "smoke": "tsx scripts/smoke.ts",
+    "bots": "tsx scripts/bots.ts"
+  },
+  "dependencies": {
+    "@colyseus/core": "0.18.18",
+    "@colyseus/ws-transport": "0.18.4",
+    "tsx": "4.23.15"
+  },
+  "devDependencies": {
+    "@colyseus/sdk": "0.18.5",
+    "@types/node": "22.19.1",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,4 +1,6 @@
-# 联机与 TURN
+# 联机与 TURN（旧版 /legacy/）
+
+> 这份说明只适用于旧的原生 JS 版本（网站 `/legacy/` 目录）。新版用 Colyseus 服务器联机，不需要 TURN，部署方法见 [README.md](README.md)。
 
 游戏使用 Trystero `0.26.0`（jsDelivr 精确版本）做 WebRTC 信令，默认不需要自建服务器。信令只负责找人和交换连接信息，果冻状态走浏览器之间的直连。
 

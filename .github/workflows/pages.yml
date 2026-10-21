@@ -2,6 +2,7 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
   pages: write
@@ -17,9 +18,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/client/package-lock.json
+      # 新版 React 客户端；联机服务器地址来自仓库变量 SERVER_URL（Settings → Secrets and variables → Actions → Variables）
+      - name: Build client
+        working-directory: apps/client
+        env:
+          VITE_SERVER_URL: ${{ vars.SERVER_URL }}
+        run: |
+          npm ci
+          npm run build
+      # 网站根目录放新版，旧的原生 JS 版放到 /legacy/
+      - name: Assemble site
+        run: |
+          mkdir -p _site/legacy
+          cp -r apps/client/dist/. _site/
+          cp -r index.html manifest.json sw.js icons src _site/legacy/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

@@ -1,0 +1,74 @@
+/* 战斗页：3D 画布、HUD、摇杆、冲撞键、缩圈警告 */
+.battle-page { touch-action: none; }
+.battle-canvas { position: absolute; inset: 0; }
+.battle-canvas canvas { display: block; width: 100% !important; height: 100% !important; }
+
+.hud-top { position: absolute; z-index: 5; top: calc(10px + var(--safe-t)); left: calc(12px + var(--safe-l)); right: calc(12px + var(--safe-r));
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; pointer-events: none; }
+.hud-left, .hud-right { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.hud-left { flex-direction: column; align-items: flex-start; }
+.hud-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 14px; background: rgba(29, 42, 110, 0.88);
+  font-size: 17px; font-weight: 900; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25); }
+.hud-pill b { font-size: 22px; color: var(--yellow); }
+.hud-title { font-size: 18px; }
+.hud-level { font-size: 14px; background: rgba(255, 79, 123, 0.9); }
+.hud-timer { font-size: 22px; padding: 6px 16px; font-variant-numeric: tabular-nums; }
+.hud-pause { pointer-events: auto; width: 46px; height: 42px; justify-content: center; padding: 0; font-size: 14px; }
+
+/* 摇杆：占左半屏，默认显示在左下角 */
+.joy-zone { position: absolute; z-index: 3; left: 0; top: 18%; bottom: 0; width: 50%; touch-action: none; }
+.joy-base { position: absolute; left: calc(100px + var(--safe-l)); top: calc(100% - 100px - var(--safe-b)); width: 140px; height: 140px; transform: translate(-50%, -50%);
+  border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.25), rgba(60, 110, 220, 0.35)); border: 4px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 6px 18px rgba(20, 40, 120, 0.3); opacity: 0.85; pointer-events: none; }
+.joy-active { opacity: 1; }
+.joy-knob { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #cfe6ff 60%, #8db8ee); box-shadow: 0 4px 0 #5f86c8, 0 6px 12px rgba(0, 0, 0, 0.25); }
+
+/* 冲撞键：直径至少 120px，外圈显示蓄力 */
+.dash-btn { position: absolute; z-index: 4; right: calc(28px + var(--safe-r)); bottom: calc(28px + var(--safe-b)); width: 124px; height: 124px; border-radius: 50%;
+  display: grid; place-items: center; touch-action: none;
+  background: radial-gradient(circle at 40% 30%, #b98cff, #7a3fe0 70%), #7a3fe0; border: 5px solid #fff; box-shadow: 0 6px 0 #4b22a0, 0 10px 24px rgba(60, 20, 140, 0.45); }
+.dash-btn::before { content: ''; position: absolute; inset: -10px; border-radius: 50%;
+  background: conic-gradient(#ff3a4a var(--charge, 0deg), transparent 0); -webkit-mask: radial-gradient(circle, transparent 62px, #000 63px); mask: radial-gradient(circle, transparent 62px, #000 63px); }
+.dash-btn:active, .dash-charging { transform: scale(0.94); }
+.dash-charging { box-shadow: 0 3px 0 #4b22a0, 0 0 30px rgba(255, 60, 80, 0.7); }
+.key-hint { position: absolute; z-index: 2; left: 50%; bottom: calc(8px + var(--safe-b)); transform: translateX(-50%); margin: 0; font-size: 12px; opacity: 0.8; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+@media (hover: none) { .key-hint { display: none; } }
+
+/* 倒计时 / 淘汰提示 */
+.countdown { position: absolute; z-index: 6; left: 50%; top: 40%; transform: translate(-50%, -50%); font-size: clamp(56px, 12vw, 120px); font-weight: 900;
+  color: #fff; -webkit-text-stroke: 4px #5b2bb0; paint-order: stroke fill; text-shadow: 0 6px 0 #3a1a80; animation: zoom 0.9s ease-out; pointer-events: none; white-space: nowrap; }
+@keyframes zoom { from { transform: translate(-50%, -50%) scale(1.8); opacity: 0; } 30% { opacity: 1; } }
+.out-banner { position: absolute; z-index: 6; left: 50%; top: 30%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 14px 20px; border-radius: 18px; background: rgba(29, 42, 110, 0.85); text-align: center; }
+.out-banner p { margin: 0; font-size: 18px; font-weight: 900; }
+
+/* 缩圈警告 */
+.shrink-banner { position: absolute; z-index: 6; left: 50%; top: calc(14px + var(--safe-t)); transform: translateX(-50%); display: flex; align-items: center; gap: 12px;
+  padding: 8px 18px 8px 10px; border-radius: 16px; background: linear-gradient(180deg, #ff4a56, #d4142a); border: 3px solid #ffb3ba;
+  box-shadow: 0 0 24px rgba(255, 40, 60, 0.8); font-size: clamp(18px, 3vw, 28px); font-weight: 900; white-space: nowrap; animation: shake 0.5s ease-in-out infinite; }
+.shrink-icon { width: 40px; height: 36px; display: grid; place-items: center; color: #e8202f; background: #fff; clip-path: polygon(50% 0, 100% 100%, 0 100%); font-size: 22px; padding-top: 8px; }
+.shrink-count { min-width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: #fff; color: #d4142a; font-size: 24px; animation: beat 1s ease-out; }
+@keyframes shake { 0%, 100% { transform: translateX(-50%) rotate(0); } 25% { transform: translateX(-50%) rotate(-1.5deg); } 75% { transform: translateX(-50%) rotate(1.5deg); } }
+@keyframes beat { from { transform: scale(1.6); } }
+.danger-vignette { position: absolute; z-index: 1; inset: 0; pointer-events: none; box-shadow: inset 0 0 120px 30px rgba(255, 30, 50, 0.55); animation: glow 0.6s ease-in-out infinite alternate; }
+@keyframes glow { from { opacity: 0.45; } to { opacity: 1; } }
+
+/* 暂停菜单 */
+.pause-menu { display: flex; flex-direction: column; gap: 12px; padding: 20px; text-align: center; }
+.pause-menu h2 { margin: 0 0 6px; }
+
+/* 手机横屏：HUD 和按钮缩小一点 */
+@media (max-height: 480px) {
+  .hud-pill { font-size: 14px; padding: 4px 10px; }
+  .hud-pill b { font-size: 18px; }
+  .hud-timer { font-size: 18px; }
+  .joy-base { width: 120px; height: 120px; left: calc(80px + var(--safe-l)); top: calc(100% - 80px - var(--safe-b)); }
+  .joy-knob { width: 54px; height: 54px; }
+  .dash-btn { right: calc(20px + var(--safe-r)); bottom: calc(18px + var(--safe-b)); }
+}
+/* 竖屏：缩圈横幅放到 HUD 下方，避免重叠 */
+@media (orientation: portrait) {
+  .shrink-banner { top: calc(110px + var(--safe-t)); }
+  .hud-title { display: none; }
+}
