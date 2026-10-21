@@ -66,7 +66,25 @@ GitHub 仓库 → Settings → Secrets and variables → Actions → Variables �
 
 临时换服务器也可以不重新发布：网址后面加 `?server=wss://...`，手机会记住这个地址。
 
-### 3. 网页（GitHub Pages）
+### 3. 账号与云端战绩（Supabase，免费）
+
+1. 打开 [supabase.com](https://supabase.com) 用 GitHub 登录，New project，选免费档，记住数据库密码。
+2. 项目建好后：左栏 **SQL Editor** → New query，把仓库里 [`supabase/schema.sql`](supabase/schema.sql) 全文粘贴进去 → Run。
+3. **Authentication → Providers → Email** 保持开启。开发阶段可在 **Authentication → Providers → Email** 里关掉 **Confirm email**，这样注册后马上能登录（正式上线建议再打开验证）。
+4. **Authentication → URL Configuration**：
+   - Site URL 填 `https://<用户名>.github.io/jelly-brawl/`
+   - Redirect URLs 加上同一地址，以及本地调试用的 `http://127.0.0.1:5174/**`
+5. **Project Settings → API** 复制：
+   - Project URL → 仓库 Variables：`VITE_SUPABASE_URL`
+   - `anon` `public` key → 仓库 Variables：`VITE_SUPABASE_ANON_KEY`  
+   （不要把 `service_role` 密钥写进前端或仓库。）
+6. 重新跑一遍 GitHub Actions「Deploy GitHub Pages」。
+
+本地调试：复制 `apps/client/.env.example` 为 `.env.local` 填入同上两项，再 `npm run dev`。
+
+游戏里：大厅右上角 **设置** → 注册 / 登录。打完一局后战绩写入云端；「排行榜」里可看自己的最近战绩（仍不是全服排行榜）。
+
+### 4. 网页（GitHub Pages）
 
 推送到 `main` 后，`.github/workflows/pages.yml` 会自动构建 `apps/client` 并发布：
 
@@ -84,5 +102,5 @@ GitHub 仓库 → Settings → Secrets and variables → Actions → Variables �
 
 - 联机不做断线重连。对局中掉线，你的果冻会交给电脑，下一局要重新加入。
 - 对局开始后房间会锁住，新玩家要等这一局结束才能进。
-- 宝石、金币、排行榜还没有接入。
+- 宝石、金币、全服排行榜尚未接入；邮箱账号可存个人战绩。
 - 原始大模型 `2b33e7661b753dfea12ffdff5f8123f2.glb`（68 MB）和 `jelly_brawl_page_assets.zip` 没有进仓库；游戏实际用的是压缩后的 `apps/client/public/models/` 里的模型。

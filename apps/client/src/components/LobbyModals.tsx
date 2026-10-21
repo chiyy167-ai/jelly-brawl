@@ -1,6 +1,10 @@
 /** 大厅里的各个弹窗。未接入的功能会明确写出“尚未接入”。 */
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { RARITY_LABEL } from '../data/skins';
-import { loadHistory } from '../state/storage';
+import { auth } from '../state/auth';
+import { fetchCloudHistory } from '../state/cloudHistory';
+import { loadHistory, type HistoryEntry } from '../state/storage';
+import { AuthPanel } from './AuthPanel';
 import { Modal } from './Modal';
 import { MultiModal } from './MultiModal';
 
@@ -16,8 +20,11 @@ export function LobbyModals({ which, onClose, roomCode }: { which: LobbyModal; o
   if (which === 'settings') {
     return (
       <Modal title="设置" onClose={onClose}>
-        <p className="pending-note">设置项（音量、画质等）尚未接入。当前版本没有音效。</p>
-        <p className="muted">版本：网页版 0.2（单机 + 4 人联机）</p>
+        <h3 className="auth-title">账号</h3>
+        <AuthPanel />
+        <hr className="auth-hr" />
+        <p className="pending-note">音量、画质等设置项尚未接入。当前版本没有音效。</p>
+        <p className="muted">版本：网页版 0.3（单机 + 4 人联机 + 账号战绩）</p>
       </Modal>
     );
   }
@@ -32,16 +39,44 @@ export function LobbyModals({ which, onClose, roomCode }: { which: LobbyModal; o
 }
 
 function RankModal({ onClose }: { onClose(): void }) {
-  const list = loadHistory();
+  const version = useSyncExternalStore(auth.subscribe, auth.getVersion);
+  const loggedIn = auth.loggedIn;
+  const [list, setList] = useState<HistoryEntry[]>(() => loadHistory());
+  const [loading, setLoading] = useState(loggedIn);
+
+  useEffect(() => {
+    let alive = true;
+    if (!loggedIn) {
+      setList(loadHistory());
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    void fetchCloudHistory().then((rows) => {
+      if (alive) {
+        setList(rows);
+        setLoading(false);
+      }
+    });
+    return () => { alive = false; };
+  }, [loggedIn, version]);
+
   return (
     <Modal title="排行榜" onClose={onClose}>
-      <p className="pending-note">全服排行榜尚未接入。下面是保存在本浏览器里的最近战绩。</p>
-      {list.length === 0 ? (
+      <p className="pending-note">
+        全服排行榜尚未接入。
+        {auth.loggedIn
+          ? '下面是你账号里的最近战绩（已同步到云端）。'
+          : '下面是本浏览器里的最近战绩。打开右上角设置注册登录后，战绩可换设备查看。'}
+      </p>
+      {loading ? (
+        <p className="muted">正在加载战绩…</p>
+      ) : list.length === 0 ? (
         <p className="muted">还没有战绩，先去打一局吧！</p>
       ) : (
         <ol className="history">
           {list.map((h) => (
-            <li key={h.at}>
+            <li key={`${h.at}-${h.mode}-${h.rank}-${h.score}`}>
               <span>{new Date(h.at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
               <span>{MODE_LABEL[h.mode] ?? '对战'}</span>
               <span>第 {h.rank}/{h.total} 名</span>

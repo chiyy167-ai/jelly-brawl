@@ -23,11 +23,13 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: apps/client/package-lock.json
-      # 新版 React 客户端；联机服务器地址来自仓库变量 SERVER_URL（Settings → Secrets and variables → Actions → Variables）
+      # 联机 / 账号：仓库 Variables 里配 SERVER_URL、VITE_SUPABASE_URL、VITE_SUPABASE_ANON_KEY
       - name: Build client
         working-directory: apps/client
         env:
           VITE_SERVER_URL: ${{ vars.SERVER_URL }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
         run: |
           npm ci
           npm run build

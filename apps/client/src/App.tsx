@@ -8,7 +8,9 @@ import { LobbyPage } from './pages/LobbyPage';
 import { ResultPage } from './pages/ResultPage';
 import { RoomPage } from './pages/RoomPage';
 import { SkinPage } from './pages/SkinPage';
+import { auth } from './state/auth';
 import { AppProvider, useApp } from './state/AppState';
+import { syncHistoryAfterLogin } from './state/cloudHistory';
 
 function Pages() {
   const { state } = useApp();
@@ -42,11 +44,28 @@ function NetBridge() {
   return null;
 }
 
+/** 登录成功后把本机战绩补传到云端（邮箱验证跳转回来时也会触发） */
+function AuthBridge() {
+  useEffect(() => {
+    let last = '';
+    return auth.subscribe(() => {
+      const id = auth.user?.id ?? '';
+      if (id && id !== last) {
+        last = id;
+        void syncHistoryAfterLogin();
+      }
+      if (!id) last = '';
+    });
+  }, []);
+  return null;
+}
+
 export default function App() {
   return (
     <AppProvider>
       <Pages />
       <NetBridge />
+      <AuthBridge />
       <RotateHint />
     </AppProvider>
   );

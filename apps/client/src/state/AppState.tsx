@@ -1,6 +1,7 @@
 /** 全局页面状态：当前页面、对局模式、选中皮肤、上一局结果。 */
 import { createContext, useCallback, useContext, useReducer, type Dispatch, type ReactNode } from 'react';
 import type { GameMode, MatchResult } from '../game/types';
+import { pushMatchResult } from './cloudHistory';
 import { addHistory, loadSkin, saveSkin } from './storage';
 
 export type Page = 'loading' | 'lobby' | 'battle' | 'skins' | 'result' | 'room';
@@ -70,7 +71,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // 存储等副作用放在 reducer 外面，避免开发模式下被执行两次
   const dispatch = useCallback<Dispatch<Action>>((action) => {
     if (action.type === 'selectSkin') saveSkin(action.skinId);
-    if (action.type === 'finishBattle') addHistory(action.result);
+    if (action.type === 'finishBattle') {
+      addHistory(action.result);
+      // 已登录则异步写入云端，失败不影响本地结算
+      void pushMatchResult(action.result);
+    }
     rawDispatch(action);
   }, []);
   return <Ctx.Provider value={{ state, dispatch }}>{children}</Ctx.Provider>;

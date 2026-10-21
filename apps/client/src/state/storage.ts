@@ -1,4 +1,4 @@
-/** 本地存储：已选皮肤、本机战绩。只存在当前浏览器里，不会上传。 */
+/** 本地存储：已选皮肤、本机战绩。登录后战绩还会同步到 Supabase（见 cloudHistory.ts）。 */
 import { DEFAULT_SKIN, SKINS } from '../data/skins';
 import type { GameMode, MatchResult } from '../game/types';
 

@@ -122,6 +122,14 @@
 .lobby-notice button { width: 30px; height: 30px; border-radius: 50%; background: #ffe3e6; font-size: 18px; }
 .history { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .history li span { margin-right: 8px; }
+.auth-title { margin: 0 0 8px; font-size: 16px; color: #1f86f0; }
+.auth-hr { border: 0; border-top: 2px solid #e4ebf8; margin: 14px 0; }
+.auth-panel { display: flex; flex-direction: column; gap: 10px; }
+.auth-tabs { display: flex; gap: 6px; }
+.auth-tabs button { flex: 1; padding: 8px; border-radius: 12px; background: #eaf5ff; font-weight: 900; color: #5b6799; }
+.auth-tabs button.on { background: linear-gradient(180deg, #ffe66b, #ffb21f); color: #7a3b00; box-shadow: 0 3px 0 #d9730f; }
+.auth-email { margin: 0; font-size: 15px; }
+.auth-hint { margin: 0; padding: 8px 10px; border-radius: 12px; background: #e8fff0; color: #1a7a3a; font-size: 13px; line-height: 1.4; }
 .daily-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .daily-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; border-radius: 10px; background: #eaf5ff; font-size: 11px; }
 .daily-cell b { font-size: 22px; }
