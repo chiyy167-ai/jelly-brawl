@@ -1,7 +1,8 @@
 /** 06 结算页：前三名领奖台、本局淘汰数和得分（全部来自实际对局结果）。 */
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { JellyStageView } from '../components/JellyStageView';
 import { SkyBackground } from '../components/SkyBackground';
+import { sfx, stopBattleBgm } from '../game/audio';
 import { renderThumbnails } from '../game/stage';
 import { session } from '../net/session';
 import { useApp } from '../state/AppState';
@@ -21,6 +22,15 @@ export function ResultPage() {
     [ranking],
   );
   const avatar = useMemo(() => (me ? renderThumbnails([me.skinId])[me.skinId] : ''), [me]);
+  const won = me?.rank === 1;
+  const online = r?.mode === 'online';
+
+  useEffect(() => {
+    if (!r || !me) return;
+    stopBattleBgm();
+    if (won) sfx.win();
+    else sfx.fall();
+  }, [r, me, won]);
 
   if (!r || !me || !champ) {
     return (
@@ -31,8 +41,6 @@ export function ResultPage() {
       </div>
     );
   }
-  const won = me.rank === 1;
-  const online = r.mode === 'online';
   const leave = async () => {
     await session.leave();
     dispatch({ type: 'goLobby' });

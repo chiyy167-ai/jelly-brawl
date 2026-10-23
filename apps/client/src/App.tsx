@@ -1,6 +1,7 @@
 /** 根组件：只负责按当前页面状态切换页面，外加全局的横屏提示和联机事件。 */
 import { useEffect } from 'react';
 import { RotateHint } from './components/RotateHint';
+import { unlockAudio } from './game/audio';
 import { session } from './net/session';
 import { BattlePage } from './pages/BattlePage';
 import { LoadingPage } from './pages/LoadingPage';
@@ -60,12 +61,31 @@ function AuthBridge() {
   return null;
 }
 
+/** 任意一次点击/触摸后解锁 WebAudio（iOS / 微信要求） */
+function AudioUnlock() {
+  useEffect(() => {
+    const once = () => {
+      unlockAudio();
+      window.removeEventListener('pointerdown', once);
+      window.removeEventListener('keydown', once);
+    };
+    window.addEventListener('pointerdown', once);
+    window.addEventListener('keydown', once);
+    return () => {
+      window.removeEventListener('pointerdown', once);
+      window.removeEventListener('keydown', once);
+    };
+  }, []);
+  return null;
+}
+
 export default function App() {
   return (
     <AppProvider>
       <Pages />
       <NetBridge />
       <AuthBridge />
+      <AudioUnlock />
       <RotateHint />
     </AppProvider>
   );

@@ -1,6 +1,7 @@
 /** 战斗场景渲染：只读 MatchState，负责插值、镜头、果冻形变和特效。 */
 import * as THREE from 'three';
 import { Arena } from './arena';
+import { playFx } from './audio';
 import { GAME } from './config';
 import { createJelly, type JellyObject } from './jellyModel';
 import type { MatchState } from './types';
@@ -188,6 +189,7 @@ export class BattleScene {
 
   private consumeFx(s: MatchState): void {
     for (const e of s.fx) {
+      playFx(e);
       if (e.type === 'hit') this.burst(e.x, e.y, e.heavy ? 12 : 5, e.heavy ? 9 : 5);
       else if (e.type === 'eat') this.burst(e.x, e.y, 4, 3);
     }

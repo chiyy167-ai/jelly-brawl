@@ -11,10 +11,14 @@ export const GAME = {
     { radius: 1.44, mass: 1.7, speed: 8.4, impact: 1.45, resist: 1.15 },
     { radius: 1.92, mass: 2.8, speed: 6.6, impact: 2.1, resist: 1.7 },
   ],
-  physics: { friction: 3.4, restitution: 0.42, maxSpeed: 39, fallMargin: 0.64, accel: 3.2 },
+  physics: {
+    friction: 3.2, restitution: 0.58, maxSpeed: 39, fallMargin: 0.64, accel: 3.2,
+    // 对撞：拆开“顶牛卡住”——最低弹开速度、侧滑、硬撞阈值、冲刺优势
+    minSepSpeed: 6.5, clashSlip: 9, clashSpeed: 14, clashStun: 0.55, dashMassScale: 0.62,
+  },
   charge: {
     maxTime: 1.2, moveScale: 0.4, cooldown: 0.4, dashTime: 0.22,
-    minForce: 12.8, maxForce: 41.6, heavyImpact: 18.4, hitStop: 0.08, shake: 0.45,
+    minForce: 12.8, maxForce: 41.6, heavyImpact: 16.5, hitStop: 0.09, shake: 0.5,
   },
   platform: {
     maxRadius: 10, finalRadius: 4.32, shrinkAfter: 15, shrinkEvery: 8,

@@ -57,7 +57,8 @@ export type FxEvent =
   | { type: 'hit'; x: number; y: number; heavy: boolean }
   | { type: 'eat'; x: number; y: number; id: number }
   | { type: 'fall'; id: number }
-  | { type: 'shrink' };
+  | { type: 'shrink' }
+  | { type: 'dash'; id: number };
 
 export interface ShrinkWarn {
   timeLeft: number;

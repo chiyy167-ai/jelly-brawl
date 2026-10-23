@@ -130,6 +130,9 @@
 .auth-tabs button.on { background: linear-gradient(180deg, #ffe66b, #ffb21f); color: #7a3b00; box-shadow: 0 3px 0 #d9730f; }
 .auth-email { margin: 0; font-size: 15px; }
 .auth-hint { margin: 0; padding: 8px 10px; border-radius: 12px; background: #e8fff0; color: #1a7a3a; font-size: 13px; line-height: 1.4; }
+.sound-toggles { display: flex; gap: 8px; flex-wrap: wrap; }
+.sound-toggle { flex: 1; min-width: 120px; padding: 10px 12px; border-radius: 14px; background: #eaf5ff; font-weight: 900; color: #5b6799; }
+.sound-toggle.on { background: linear-gradient(180deg, #ffe66b, #ffb21f); color: #7a3b00; box-shadow: 0 3px 0 #d9730f; }
 .daily-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .daily-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; border-radius: 10px; background: #eaf5ff; font-size: 11px; }
 .daily-cell b { font-size: 22px; }

@@ -1,6 +1,6 @@
 /** 圆形刚体物理：移动、蓄力冲刺、碰撞、吃块、出界。只改 state，不碰渲染。 */
 import { GAME } from './config';
-import type { InputCmd, Jelly, MatchState } from './types';
+import type { FxEvent, InputCmd, Jelly, MatchState } from './types';
 
 export function applyLevel(j: Jelly): void {
   const s = GAME.levels[j.level - 1];
@@ -11,24 +11,24 @@ export function applyLevel(j: Jelly): void {
   j.resist = s.resist;
 }
 
-/** 根据指令转向、加速、蓄力和松手冲刺。 */
-export function steer(j: Jelly, cmd: InputCmd, dt: number): void {
+/** 根据指令转向、加速、蓄力和松手冲刺。fx 可选，用于通知渲染/音效。 */
+export function steer(j: Jelly, cmd: InputCmd, dt: number, fx?: FxEvent[]): void {
   const c = GAME.charge;
   if (cmd.x || cmd.y) j.facing = Math.atan2(cmd.y, cmd.x);
   if (cmd.charge && j.cool <= 0 && j.dashT <= 0) {
     j.charging = true;
     j.charge = Math.min(c.maxTime, j.charge + dt);
   } else if (!cmd.charge && j.charging) {
-    launch(j);
+    launch(j, fx);
   }
   j.cool = Math.max(0, j.cool - dt);
-  const scale = (j.charging ? c.moveScale : 1) * (j.dizzy > 0 ? 0.5 : 1);
+  const scale = (j.charging ? c.moveScale : 1) * (j.dizzy > 0 ? 0.45 : 1);
   const a = j.speed * scale * dt * GAME.physics.accel;
   j.vx += cmd.x * a;
   j.vy += cmd.y * a;
 }
 
-function launch(j: Jelly): void {
+function launch(j: Jelly, fx?: FxEvent[]): void {
   const c = GAME.charge;
   const amount = j.charge / c.maxTime;
   const force = c.minForce + (c.maxForce - c.minForce) * amount;
@@ -38,6 +38,7 @@ function launch(j: Jelly): void {
   j.charging = false;
   j.cool = c.cooldown;
   j.dashT = c.dashTime;
+  fx?.push({ type: 'dash', id: j.id });
 }
 
 /** 摩擦、限速、积分位置、计时器递减。 */
@@ -81,25 +82,67 @@ function bounce(s: MatchState, a: Jelly, b: Jelly): void {
   a.y -= ny * overlap * b.mass * inv;
   b.x += nx * overlap * a.mass * inv;
   b.y += ny * overlap * a.mass * inv;
+
   const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
   if (rel > 0) return;
-  const j = (-(1 + GAME.physics.restitution) * rel) / (1 / a.mass + 1 / b.mass);
-  a.vx -= (j * nx) / a.mass / a.resist;
-  a.vy -= (j * ny) / a.mass / a.resist;
-  b.vx += (j * nx) / b.mass / b.resist;
-  b.vy += (j * ny) / b.mass / b.resist;
+
+  // 冲刺一方更“硬”，对撞时更容易把对方撞开，而不是力量抵消卡住
+  let ma = a.mass;
+  let mb = b.mass;
+  const scale = GAME.physics.dashMassScale;
+  if (a.dashT > 0 && b.dashT <= 0) mb *= scale;
+  if (b.dashT > 0 && a.dashT <= 0) ma *= scale;
+
+  const approach = -rel;
+  const clash = approach >= GAME.physics.clashSpeed;
+  const rest = clash ? Math.min(0.85, GAME.physics.restitution + 0.18) : GAME.physics.restitution;
+  let impulse = (-(1 + rest) * rel) / (1 / ma + 1 / mb);
+
+  // 硬撞额外弹开，避免“力气一样就顶死”
+  if (clash) impulse *= 1.25;
+
+  a.vx -= (impulse * nx) / ma / a.resist;
+  a.vy -= (impulse * ny) / ma / a.resist;
+  b.vx += (impulse * nx) / mb / b.resist;
+  b.vy += (impulse * ny) / mb / b.resist;
+
+  // 侧滑：正面顶牛时沿切线甩开，两只果冻会错身而过
+  const tx = -ny;
+  const ty = nx;
+  const side = ((a.id * 17 + b.id * 31 + Math.floor(s.time * 20)) & 1) === 0 ? 1 : -1;
+  const slip = GAME.physics.clashSlip * Math.min(1, approach / (GAME.physics.clashSpeed * 1.4)) * side;
+  const wa = mb / (ma + mb);
+  const wb = ma / (ma + mb);
+  a.vx += tx * slip * wa;
+  a.vy += ty * slip * wa;
+  b.vx -= tx * slip * wb;
+  b.vy -= ty * slip * wb;
+
+  // 保证沿法线至少有最低分离速度，彻底杜绝贴住抖
+  const rel2 = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+  const need = GAME.physics.minSepSpeed;
+  if (rel2 < need) {
+    const fix = (need - rel2) / (1 / ma + 1 / mb);
+    a.vx -= (fix * nx) / ma;
+    a.vy -= (fix * ny) / ma;
+    b.vx += (fix * nx) / mb;
+    b.vy += (fix * ny) / mb;
+  }
+
   if (a.hurtCd > 0 || b.hurtCd > 0) return;
-  a.hurtCd = b.hurtCd = 0.35;
-  a.dizzy = b.dizzy = 0.35;
+  a.hurtCd = b.hurtCd = clash ? 0.4 : 0.35;
+  const stun = clash ? GAME.physics.clashStun : 0.35;
+  a.dizzy = Math.max(a.dizzy, stun);
+  b.dizzy = Math.max(b.dizzy, stun);
   a.lastHitBy = b.id;
   b.lastHitBy = a.id;
   a.lastHitTime = b.lastHitTime = s.time;
-  const power = Math.abs(j) * 0.5 * a.impact * b.impact;
-  const heavy = power > GAME.charge.heavyImpact;
+  const power = Math.abs(impulse) * 0.5 * a.impact * b.impact;
+  const heavy = power > GAME.charge.heavyImpact || (clash && (a.dashT > 0 || b.dashT > 0));
   s.fx.push({ type: 'hit', x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, heavy });
   if (!heavy) return;
   s.hitStop = GAME.charge.hitStop;
-  s.shake = GAME.charge.shake;
+  s.shake = GAME.charge.shake * (clash ? 1.15 : 1);
   shrinkOnHit(s, a);
   shrinkOnHit(s, b);
 }

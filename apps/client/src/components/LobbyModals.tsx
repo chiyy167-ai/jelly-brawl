@@ -1,6 +1,7 @@
 /** 大厅里的各个弹窗。未接入的功能会明确写出“尚未接入”。 */
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { RARITY_LABEL } from '../data/skins';
+import { isBgmMuted, isMuted, setBgmMuted, setMuted, unlockAudio } from '../game/audio';
 import { auth } from '../state/auth';
 import { fetchCloudHistory } from '../state/cloudHistory';
 import { loadHistory, type HistoryEntry } from '../state/storage';
@@ -17,17 +18,7 @@ export function LobbyModals({ which, onClose, roomCode }: { which: LobbyModal; o
   if (which === 'rank') return <RankModal onClose={onClose} />;
   if (which === 'daily') return <DailyModal onClose={onClose} />;
   if (which === 'tutorial') return <TutorialModal onClose={onClose} />;
-  if (which === 'settings') {
-    return (
-      <Modal title="设置" onClose={onClose}>
-        <h3 className="auth-title">账号</h3>
-        <AuthPanel />
-        <hr className="auth-hr" />
-        <p className="pending-note">音量、画质等设置项尚未接入。当前版本没有音效。</p>
-        <p className="muted">版本：网页版 0.3（单机 + 4 人联机 + 账号战绩）</p>
-      </Modal>
-    );
-  }
+  if (which === 'settings') return <SettingsModal onClose={onClose} />;
   if (which === 'shop') {
     return (
       <Modal title="商城" onClose={onClose}>
@@ -36,6 +27,48 @@ export function LobbyModals({ which, onClose, roomCode }: { which: LobbyModal; o
     );
   }
   return null;
+}
+
+function SettingsModal({ onClose }: { onClose(): void }) {
+  const [sfxOff, setSfxOff] = useState(isMuted);
+  const [bgmOff, setBgmOff] = useState(isBgmMuted);
+  return (
+    <Modal title="设置" onClose={onClose}>
+      <h3 className="auth-title">声音</h3>
+      <div className="sound-toggles">
+        <button
+          type="button"
+          className={`sound-toggle ${sfxOff ? '' : 'on'}`}
+          onClick={() => {
+            unlockAudio();
+            const next = !sfxOff;
+            setMuted(next);
+            setSfxOff(next);
+          }}
+        >
+          音效：{sfxOff ? '关' : '开'}
+        </button>
+        <button
+          type="button"
+          className={`sound-toggle ${bgmOff ? '' : 'on'}`}
+          onClick={() => {
+            unlockAudio();
+            const next = !bgmOff;
+            setBgmMuted(next);
+            setBgmOff(next);
+          }}
+        >
+          背景音乐：{bgmOff ? '关' : '开'}
+        </button>
+      </div>
+      <p className="muted">音效用手机扬声器实时合成，不额外下载音频文件。</p>
+      <hr className="auth-hr" />
+      <h3 className="auth-title">账号</h3>
+      <AuthPanel />
+      <hr className="auth-hr" />
+      <p className="muted">版本：网页版 0.4（音效 + 对撞手感调整）</p>
+    </Modal>
+  );
 }
 
 function RankModal({ onClose }: { onClose(): void }) {

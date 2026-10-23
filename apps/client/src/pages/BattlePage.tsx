@@ -5,6 +5,7 @@ import { IconTimer, IconUser } from '../components/icons';
 import { Joystick } from '../components/Joystick';
 import { ShrinkWarning } from '../components/ShrinkWarning';
 import { SkyBackground } from '../components/SkyBackground';
+import { sfx, startBattleBgm, stopBattleBgm, unlockAudio } from '../game/audio';
 import { createInput } from '../game/input';
 import { NetRunner } from '../game/netRunner';
 import { BattleRunner, type Hud } from '../game/runner';
@@ -31,31 +32,54 @@ export function BattlePage() {
   const online = state.mode === 'online';
 
   useEffect(() => {
+    unlockAudio();
+    startBattleBgm();
     const onEnd = (result: MatchResult) => dispatch({ type: 'finishBattle', result });
     if (online) {
       if (!session.start) {
         dispatch({ type: 'goLobby' });
-        return;
+        return () => stopBattleBgm();
       }
       const r = new NetRunner({ host: host.current!, input, onHud: setHud, onEnd });
-      return () => r.dispose();
+      return () => {
+        stopBattleBgm();
+        r.dispose();
+      };
     }
     const r = new BattleRunner({ host: host.current!, mode: state.mode, skinId: state.skinId, input, onHud: setHud, onEnd });
     runner.current = r;
     return () => {
+      stopBattleBgm();
       r.dispose();
       runner.current = null;
     };
   }, [online, state.mode, state.skinId, input, dispatch]);
 
+  // 倒计时音效：3、2、1、开打
+  const lastCount = useRef<number | null>(null);
   useEffect(() => {
-    // 联机时服务器不会暂停，只是打开菜单
+    if (!hud || hud.phase !== 'countdown') {
+      lastCount.current = null;
+      return;
+    }
+    if (lastCount.current === hud.countdown) return;
+    lastCount.current = hud.countdown;
+    if (hud.countdown > 0) sfx.tick();
+    else sfx.go();
+  }, [hud]);
+
+  useEffect(() => {
     if (!online) runner.current?.setPaused(paused);
+    if (paused) stopBattleBgm();
+    else if (hud?.phase === 'play' || hud?.phase === 'countdown') startBattleBgm();
+  }, [paused, online, hud?.phase]);
+
+  useEffect(() => {
     if (paused) {
       input.dashHeld = false;
       input.stickX = input.stickY = 0;
     }
-  }, [paused, input, online]);
+  }, [paused, input]);
 
   const leaveRoom = async () => {
     await session.leave();

@@ -123,7 +123,7 @@ export function stepMatch(s: MatchState, inputs: Record<number, InputCmd>, dt: n
   thinkAi(s, dt);
   for (const j of s.jellies) {
     if (!j.alive) continue;
-    steer(j, j.human ? (inputs[j.id] ?? IDLE) : j.wish, dt);
+    steer(j, j.human ? (inputs[j.id] ?? IDLE) : j.wish, dt, s.fx);
     integrate(j, dt);
   }
   collideAll(s);
