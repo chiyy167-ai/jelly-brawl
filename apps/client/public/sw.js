@@ -4,7 +4,7 @@
  * - 模型等固定名字的文件 → 先用缓存秒开，后台再悄悄更新
  * - 页面本身 → 先联网拿最新版（这样发布更新能马上看到），网络慢或断网时用缓存
  */
-const CACHE = 'jb-app-v1';
+const CACHE = 'jb-app-v2';
 const NAV_TIMEOUT_MS = 2500;
 const scope = new URL(self.registration.scope);
 const INDEX = new URL('./', scope).href;
@@ -14,10 +14,10 @@ self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     // 删掉旧版（原生 JS 版）在根目录留下的缓存
-    const old = (await caches.keys()).filter((k) => k !== CACHE && k.startsWith('jelly-brawl-'));
+    // 清掉所有旧缓存（含 jb-app-v1、原生版 jelly-brawl-*）
+    const old = (await caches.keys()).filter((k) => k !== CACHE);
     await Promise.all(old.map((k) => caches.delete(k)));
     await self.clients.claim();
-    // 旧版缓存里的页面可能还开着，刷新一次换成新版
     if (old.length) {
       const list = await self.clients.matchAll({ type: 'window' });
       list.forEach((c) => isOurs(new URL(c.url)) && c.navigate(c.url));
