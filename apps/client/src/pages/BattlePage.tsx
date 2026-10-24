@@ -1,5 +1,5 @@
 /** 03 战斗页：3D 擂台 + 摇杆 + HUD（系列赛 / 事件横幅 / 局间记分）。 */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { DashButton } from '../components/DashButton';
 import { SkillButton } from '../components/SkillButton';
 import { IconTimer, IconUser } from '../components/icons';
@@ -7,10 +7,11 @@ import { Joystick } from '../components/Joystick';
 import { ShrinkWarning } from '../components/ShrinkWarning';
 import { SkyBackground } from '../components/SkyBackground';
 import { sfx, startBattleBgm, stopBattleBgm, unlockAudio } from '../game/audio';
-import { createInput } from '../game/input';
+import { createInput, releaseKeys } from '../game/input';
 import { NetRunner } from '../game/netRunner';
 import { BattleRunner, type Hud } from '../game/runner';
 import type { MatchResult } from '../game/types';
+import { onlineNow, subscribeOnline } from '../net/onlineCount';
 import { session } from '../net/session';
 import { useApp } from '../state/AppState';
 
@@ -29,6 +30,10 @@ export function BattlePage() {
   const [input] = useState(createInput);
   const [hud, setHud] = useState<Hud | null>(null);
   const [paused, setPaused] = useState(false);
+  const [high, setHigh] = useState(false);
+  const highRef = useRef(false);
+  const setCam = useRef<(v: boolean) => void>(() => undefined);
+  const onlineN = useSyncExternalStore(subscribeOnline, onlineNow, () => null);
   const practice = state.mode === 'practice';
   const online = state.mode === 'online';
 
@@ -42,8 +47,11 @@ export function BattlePage() {
         return () => stopBattleBgm();
       }
       const r = new NetRunner({ host: host.current!, input, onHud: setHud, onEnd });
+      setCam.current = (v) => r.setHighView(v);
+      r.setHighView(highRef.current);
       return () => {
         stopBattleBgm();
+        setCam.current = () => undefined;
         r.dispose();
       };
     }
@@ -51,8 +59,11 @@ export function BattlePage() {
       host: host.current!, mode: state.mode, skinId: state.skinId, mapId: state.mapId, input, onHud: setHud, onEnd,
     });
     runner.current = r;
+    setCam.current = (v) => r.setHighView(v);
+    r.setHighView(highRef.current);
     return () => {
       stopBattleBgm();
+      setCam.current = () => undefined;
       r.dispose();
       runner.current = null;
     };
@@ -81,14 +92,35 @@ export function BattlePage() {
     if (paused) {
       input.dashHeld = false;
       input.useQueued = false;
+      input.swapQueued = false;
       input.stickX = input.stickY = 0;
+      releaseKeys();
     }
   }, [paused, input]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'KeyC' || e.repeat) return;
+      e.preventDefault();
+      highRef.current = !highRef.current;
+      setHigh(highRef.current);
+      setCam.current(highRef.current);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const leaveRoom = async () => {
     await session.leave();
     dispatch({ type: 'goLobby' });
   };
+
+  const bannerSeen = useRef<string | null>(null);
+  const bannerKey = useRef(0);
+  if (hud?.banner !== bannerSeen.current) {
+    bannerSeen.current = hud?.banner ?? null;
+    if (hud?.banner) bannerKey.current += 1;
+  }
 
   const warn = hud?.phase === 'play' ? hud.warnLeft : null;
   const title = online && session.lobby ? `${TITLES.online} · 房间 ${session.lobby.code}` : TITLES[state.mode];
@@ -109,14 +141,20 @@ export function BattlePage() {
           <span className="hud-pill hud-level">体型 Lv.{hud?.level ?? 1}{hud?.item ? ` · ${hud.item}` : ''}</span>
         </div>
         <div className="hud-right">
+          <span className="hud-pill">在线 {onlineN ?? '—'}</span>
           <span className="hud-pill hud-timer"><IconTimer />{fmt(hud?.timeLeft ?? 60)}</span>
+          <button type="button" className="hud-pill hud-cam" onClick={() => {
+            highRef.current = !highRef.current;
+            setHigh(highRef.current);
+            setCam.current(highRef.current);
+          }}>{high ? '正常视角' : '高视角'}</button>
           <button className="hud-pill hud-pause" onClick={() => setPaused(true)} aria-label={online ? '菜单' : '暂停'}>❚❚</button>
         </div>
       </div>
 
       <ShrinkWarning secondsLeft={warn} />
 
-      {hud?.banner && <div className="event-banner">{hud.banner}</div>}
+      {hud?.banner && <div className="event-banner" key={bannerKey.current}>{hud.banner}</div>}
       {hud?.alert && <div className="event-alert">{hud.alert}</div>}
 
       {hud?.phase === 'countdown' && (
@@ -152,9 +190,21 @@ export function BattlePage() {
       {hud?.phase === 'series_end' && <div className="countdown">系列赛结束</div>}
 
       <Joystick input={input} />
+      {hud?.heldB && hud.playerAlive && hud.phase === 'play' && (
+        <button
+          type="button"
+          className="swap-btn"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            input.swapQueued = true;
+          }}
+        >
+          Q 切换 {hud.heldB}
+        </button>
+      )}
       {hud?.held && hud.playerAlive && hud.phase === 'play' && <SkillButton input={input} name={hud.held} />}
       <DashButton input={input} charge={hud?.charge ?? 0} />
-      <p className="key-hint">电脑：WASD 移动，空格蓄力，E 释放道具 / 幽灵放布丁</p>
+      <p className="key-hint">电脑：WASD 移动，空格蓄力，E 或 1 释放，Q 或 2 切换，C 切换视角</p>
 
       {paused && (
         <div className="modal-mask">

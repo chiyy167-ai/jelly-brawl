@@ -2,12 +2,13 @@ import type { Rng } from './rng';
 
 export type GameMode = 'match' | 'practice' | 'online';
 
-/** 一帧指令：摇杆 + 蓄力；use 为释放手持道具的一次性脉冲 */
+/** 一帧指令：摇杆 + 蓄力；use 释放当前道具，swap 对调两个道具槽 */
 export interface InputCmd {
   x: number;
   y: number;
   charge: boolean;
   use?: boolean;
+  swap?: boolean;
 }
 
 /** 开箱可获得的道具（场上只掉神秘箱） */
@@ -47,8 +48,10 @@ export interface Jelly {
   hits: number;
   selfOut: number;
   puddings: number;
-  /** 持有待触发：手套 / 冰雪球 */
+  /** 当前选中、释放时消耗的道具 */
   item: ItemKind | null;
+  /** 备用槽，和 item 对调后才能释放 */
+  itemB: ItemKind | null;
   shield: number;
   magnet: number;
   /** 冲刺火箭剩余时间 */
@@ -128,7 +131,9 @@ export type FxEvent =
   | { type: 'fall'; id: number }
   | { type: 'shrink' }
   | { type: 'dash'; id: number }
-  | { type: 'banner'; text: string };
+  | { type: 'banner'; text: string }
+  /** 拾取或释放道具：彩色粒子 + 地面扩散圈 */
+  | { type: 'item'; x: number; y: number; color: number };
 
 export interface ShrinkWarn {
   timeLeft: number;

@@ -70,15 +70,20 @@ export class NetRunner {
   /** 输入变了立刻发；没变也每 0.2 秒补发一次，防止丢包后卡住 */
   private sendInput(cmd: InputCmd, dt: number): void {
     this.sinceSend += dt;
-    const key = `${cmd.x.toFixed(2)},${cmd.y.toFixed(2)},${cmd.charge},${cmd.use ? 1 : 0}`;
+    const key = `${cmd.x.toFixed(2)},${cmd.y.toFixed(2)},${cmd.charge},${cmd.use ? 1 : 0},${cmd.swap ? 1 : 0}`;
     const changed = key !== this.lastSent;
-    const urgent = cmd.use === true;
+    const urgent = cmd.use === true || cmd.swap === true;
     // 释放技能立刻发；其它变化最多 inputHz 次/秒
     if (!urgent && !(changed && this.sinceSend >= 1 / GAME.online.inputHz) && this.sinceSend < 0.2) return;
     this.sinceSend = 0;
     this.lastSent = key;
     session.sendInput(cmd);
     this.opt.input.useQueued = false;
+    this.opt.input.swapQueued = false;
+  }
+
+  setHighView(high: boolean): void {
+    this.scene.setHigh(high);
   }
 
   dispose(): void {

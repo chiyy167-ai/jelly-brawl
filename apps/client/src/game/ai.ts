@@ -7,7 +7,8 @@ export function thinkAi(s: MatchState, dt: number): void {
   for (const j of s.jellies) {
     if (!j.alive || j.human) continue;
     // 拿到道具后稍等再放，避免一捡就交掉
-    if (j.item && j.gloveMul <= 1 && j.itemHold > 0.6 + (j.id % 3) * 0.25) j.wish.use = true;
+    if (!j.item && j.itemB) j.wish.swap = true;
+    else if (j.item && j.gloveMul <= 1 && j.itemHold > 0.6 + (j.id % 3) * 0.25) j.wish.use = true;
     // 正在蓄力：计时到了就松手
     if (j.aiChargeT > 0) {
       j.aiChargeT -= dt;

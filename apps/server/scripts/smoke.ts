@@ -41,7 +41,7 @@ rooms.forEach((r) => r.onMessage('snap', () => (snaps += 1)));
 // 每个人都往中心推摇杆，按住再松开冲撞
 const timer = setInterval(() => {
   const charge = Math.floor(Date.now() / 700) % 2;
-  rooms.forEach((r, i) => r.send('input', [Math.cos(i), Math.sin(i), charge] satisfies InputMsg));
+  rooms.forEach((r, i) => r.send('input', [Math.cos(i), Math.sin(i), charge, 0, 0] satisfies InputMsg));
 }, 33);
 const results = await Promise.all(rooms.map((r) => wait<{ ranking: { name: string; rank: number; score: number }[] }>(r, 'result')));
 clearInterval(timer);

@@ -13,7 +13,7 @@ export function SkillButton({ input, name }: { input: InputSource; name: string 
       onContextMenu={(e) => e.preventDefault()}
       aria-label={`释放${name}`}
     >
-      <b>释放</b>
+      <b>释放 E</b>
       <span>{name}</span>
     </button>
   );

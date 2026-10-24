@@ -1,6 +1,6 @@
 /** 02 游戏大厅：开始游戏、单人练习、多人入口、皮肤、排行榜、每日奖励、新手教程。 */
 import { useMemo, useState, useSyncExternalStore } from 'react';
-import { IconBook, IconCoin, IconCrown, IconGear, IconGem, IconGift, IconPlay, IconShirt, IconUser, IconUsers } from '../components/icons';
+import { IconBook, IconCodex, IconCoin, IconCrown, IconGear, IconGem, IconGift, IconPlay, IconShirt, IconUser, IconUsers } from '../components/icons';
 import { JellyStageView } from '../components/JellyStageView';
 import { LobbyModals, type LobbyModal } from '../components/LobbyModals';
 import { Logo } from '../components/Logo';
@@ -9,6 +9,7 @@ import { SkyBackground } from '../components/SkyBackground';
 import { getSkin } from '../data/skins';
 import { renderThumbnails } from '../game/stage';
 import type { MapId } from '../game/types';
+import { onlineNow, subscribeOnline } from '../net/onlineCount';
 import { CODE_LENGTH } from '../net/protocol';
 import { useApp } from '../state/AppState';
 import { loadProgress, progressVersion, subscribeProgress, xpBar } from '../state/progress';
@@ -31,6 +32,7 @@ export function LobbyPage() {
   const [modal, setModal] = useState<LobbyModal>(roomCode ? 'multi' : null);
   const [mapNext, setMapNext] = useState<MapPickNext | null>(null);
   useSyncExternalStore(subscribeProgress, progressVersion, progressVersion);
+  const onlineN = useSyncExternalStore(subscribeOnline, onlineNow, () => null);
   const prog = loadProgress();
   const bar = xpBar();
   const skin = getSkin(state.skinId);
@@ -75,6 +77,7 @@ export function LobbyPage() {
           </button>
         </div>
         <div className="currency-row">
+          <span className="online-pill" aria-label="当前在线人数">在线 {onlineN ?? '—'}</span>
           <button className="currency" onClick={() => setModal('shop')} aria-label={`宝石 ${prog.gems}`}>
             <IconGem /><span>{prog.gems}</span><em>+</em>
           </button>
@@ -86,7 +89,7 @@ export function LobbyPage() {
       </header>
 
       <aside className="lobby-side">
-        <button className="side-btn" onClick={() => setModal('daily')}>
+        <button className="side-btn side-daily" onClick={() => setModal('daily')}>
           <IconGift size={40} />
           <span>每日奖励</span>
         </button>
@@ -94,8 +97,8 @@ export function LobbyPage() {
           <IconBook size={40} />
           <span>新手教程</span>
         </button>
-        <button className="side-btn" onClick={() => setModal('items')}>
-          <IconGift size={40} />
+        <button className="side-btn side-codex" onClick={() => setModal('items')}>
+          <IconCodex size={40} />
           <span>道具图鉴</span>
         </button>
       </aside>

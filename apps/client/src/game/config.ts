@@ -31,10 +31,13 @@ export const GAME = {
   /** 正式对战 / 联机打满局数；练习只打 1 局 */
   series: { rounds: 3, practiceRounds: 1 },
   match: { bots: 5, practiceBots: 3, spawnRadius: 6 },
-  online: { maxHumans: 4, seats: 4, snapHz: 20, inputHz: 30, resultDelay: 1.6 },
+  online: { maxHumans: 4, seats: 4, snapHz: 20, inputHz: 30, resultDelay: 1.6, presenceSec: 8 },
   fall: { gravity: 30, hideAfter: 2 },
   tile: { radius: 1.05, height: 0.7 },
-  camera: { fov: 40, height: 14.5, back: 17.5, portraitFit: 1.2, portraitTilt: 1.3, follow: 0.35 },
+  camera: {
+    fov: 40, height: 14.5, back: 17.5, portraitFit: 1.2, portraitTilt: 1.3, follow: 0.35,
+    high: { height: 28, back: 7, follow: 0.18 },
+  },
   events: {
     minCount: 1, maxCount: 2, windowStart: 15, windowEnd: 45, minGap: 8, banner: 1.8,
     rotate: { omega: 0.55, edgeAccel: 3.6, duration: 12 },

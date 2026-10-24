@@ -26,8 +26,10 @@ export interface Hud {
   roundRanks: MatchState['roundRanks'];
   ghostCd: number;
   item: string | null;
-  /** 手持、尚未消耗的道具名 */
+  /** 当前槽 */
   held: string | null;
+  /** 备用槽 */
+  heldB: string | null;
 }
 
 export function hudOf(s: MatchState): Hud {
@@ -51,6 +53,7 @@ export function hudOf(s: MatchState): Hud {
     roundRanks: s.roundRanks,
     ghostCd: p.ghostCd,
     held: p.item ? (ITEM_NAMES[p.item] ?? p.item) : null,
+    heldB: p.itemB ? (ITEM_NAMES[p.itemB] ?? p.itemB) : null,
     item: p.item ? (ITEM_NAMES[p.item] ?? p.item)
       : p.rocket > 0 ? ITEM_NAMES.rocket
         : p.star > 0 ? ITEM_NAMES.star
@@ -99,6 +102,10 @@ export class BattleRunner {
     this.paused = p;
   }
 
+  setHighView(high: boolean): void {
+    this.scene.setHigh(high);
+  }
+
   finishNow(): void {
     if (this.ended) return;
     this.ended = true;
@@ -126,7 +133,10 @@ export class BattleRunner {
       this.acc -= step;
       stepped = true;
     }
-    if (stepped) this.opt.input.useQueued = false;
+    if (stepped) {
+      this.opt.input.useQueued = false;
+      this.opt.input.swapQueued = false;
+    }
     this.scene.render(this.state, this.acc / step, dtReal, this.time);
     this.pushHud();
     if (this.state.phase === 'series_end' && !this.ended) {

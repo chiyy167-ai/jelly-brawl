@@ -50,11 +50,13 @@ export interface Snap {
   ev: number[];
   meta: [number, number, number, number];
   fx: FxEvent[];
+  /** 事件横幅原文；旧服务器可能没有 */
+  banner?: string | null;
 }
 
-export type InputMsg = [number, number, number, number];
+export type InputMsg = [number, number, number, number, number];
 
-const JELLY_FIELDS = 24;
+const JELLY_FIELDS = 25;
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
 export function cleanProfile(p: Partial<Profile> | undefined): Profile {
@@ -98,6 +100,7 @@ export function packSnap(s: MatchState): Snap {
       r2(q.charge), q.charging ? 1 : 0, r2(q.dizzy), r2(q.dashT), q.kos, q.eaten,
       r2(q.shield), r2(q.magnet), q.item ? ITEM_KINDS.indexOf(q.item) + 1 : 0, r2(q.ghostCd),
       r2(q.gloveMul), q.puddings, r2(q.rocket), r2(q.star), r2(q.freezeT), r2(q.airT),
+      q.itemB ? ITEM_KINDS.indexOf(q.itemB) + 1 : 0,
     );
   }
   const b: number[] = [];
@@ -127,6 +130,7 @@ export function packSnap(s: MatchState): Snap {
     ev: packEvents(s.events),
     meta: [r2(s.spin), r2(s.frictionScale), r2(s.itemAcc), r2(s.bannerT)],
     fx: s.fx.splice(0),
+    banner: s.banner,
   };
 }
 
@@ -178,6 +182,7 @@ export function applySnap(s: MatchState, snap: Snap): void {
     q.star = d[21] ?? 0;
     q.freezeT = d[22] ?? 0;
     q.airT = d[23] ?? 0;
+    q.itemB = d[24] > 0 ? ITEM_KINDS[d[24] - 1] : null;
   });
 
   s.blobs.forEach((blob, i) => {
@@ -238,7 +243,7 @@ export function applySnap(s: MatchState, snap: Snap): void {
 
   applyEvents(s, snap.ev);
   [s.spin, s.frictionScale, s.itemAcc, s.bannerT] = snap.meta;
-  if (s.bannerT <= 0) s.banner = null;
+  s.banner = s.bannerT > 0 ? (snap.banner ?? s.banner) : null;
   s.fx.push(...snap.fx);
 }
 

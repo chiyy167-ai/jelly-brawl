@@ -4,6 +4,7 @@ import { Arena } from './arena';
 import { playFx } from './audio';
 import { BattlePropLayer } from './battleProps';
 import { GAME } from './config';
+import { ItemFx } from './itemFx';
 import { createJelly, type JellyObject } from './jellyModel';
 import { MAPS } from './maps';
 import type { MatchState } from './types';
@@ -39,7 +40,9 @@ export class BattleScene {
   private marker: THREE.Mesh;
   private chargeRing: THREE.Mesh;
   private props: BattlePropLayer;
+  private itemFx: ItemFx;
   private camPos = new THREE.Vector3();
+  private high = false;
   private owned: { dispose(): void }[] = [];
   private portrait = false;
 
@@ -102,6 +105,7 @@ export class BattleScene {
     this.chargeRing.rotation.x = -Math.PI / 2;
     this.scene.add(this.chargeRing);
     this.props = new BattlePropLayer(this.scene);
+    this.itemFx = new ItemFx(this.scene);
     this.owned.push(
       blobGeo, sparkGeo, sparkMat, markerMat, this.marker.geometry, ringMat, this.chargeRing.geometry,
     );
@@ -172,6 +176,7 @@ export class BattleScene {
       m.rotation.set(time * 0.7 + i, time + i, 0);
     });
     this.updateSparks(dt);
+    this.itemFx.update(dt);
     this.props.update(s, time, topY);
     this.updatePlayerMarks(player, time, topY);
     this.updateCamera(player, s.shake);
@@ -191,22 +196,29 @@ export class BattleScene {
     this.chargeRing.scale.setScalar(p.radius * (1.1 + c * 0.5));
   }
 
+  /** 战斗中切换俯视高度。只影响本机镜头。 */
+  setHigh(high: boolean): void {
+    this.high = high;
+  }
+
   private updateCamera(p: MatchState['jellies'][number], shake: number): void {
     const cam = GAME.camera;
+    const spec = this.high ? cam.high : cam;
     const k = this.portrait ? Math.max(1, cam.portraitFit / this.camera.aspect) : 1;
     const tilt = this.portrait ? cam.portraitTilt : 1;
-    const back = (cam.back * k) / tilt;
-    const fx = p.alive ? p.x * cam.follow : 0;
-    const fz = p.alive ? p.y * cam.follow : 0;
-    const goal = new THREE.Vector3(fx, cam.height * k * tilt, fz + back);
+    const back = (spec.back * k) / tilt;
+    const fx = p.alive ? p.x * spec.follow : 0;
+    const fz = p.alive ? p.y * spec.follow : 0;
+    const goal = new THREE.Vector3(fx, spec.height * k * tilt, fz + back);
     if (this.camPos.lengthSq() === 0) this.camPos.copy(goal);
-    else this.camPos.lerp(goal, 0.08);
+    else this.camPos.lerp(goal, 0.12);
     this.camera.position.copy(this.camPos);
     if (shake > 0) {
       this.camera.position.x += (Math.random() - 0.5) * shake;
       this.camera.position.y += (Math.random() - 0.5) * shake;
     }
-    this.camera.lookAt(this.camPos.x, 0, this.camPos.z - back + 1.5);
+    const lookZ = this.high ? fz : this.camPos.z - back + 1.5;
+    this.camera.lookAt(fx, 0, lookZ);
   }
 
   private consumeFx(s: MatchState): void {
@@ -214,6 +226,7 @@ export class BattleScene {
       playFx(e);
       if (e.type === 'hit') this.burst(e.x, e.y, e.heavy ? 12 : 5, e.heavy ? 9 : 5);
       else if (e.type === 'eat') this.burst(e.x, e.y, 4, 3);
+      else if (e.type === 'item') this.itemFx.spawn(e.x, e.y, e.color, GAME.tile.height / 2);
     }
     s.fx.length = 0;
   }
@@ -251,6 +264,7 @@ export class BattleScene {
     this.views.forEach((v) => v.obj.dispose());
     this.arena.dispose();
     this.props.dispose();
+    this.itemFx.dispose();
     this.owned.forEach((o) => o.dispose());
     this.renderer.dispose();
     this.renderer.forceContextLoss();

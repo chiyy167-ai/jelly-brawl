@@ -1,9 +1,9 @@
 /** 神秘道具箱掉落、开箱、持续效果与地面装置。 */
 import { GAME } from './config';
 import { onStand } from './events';
+import { ITEM_COLORS } from './maps';
 import type { Candy, Hazard, HazardKind, ItemKind, Jelly, MatchState } from './types';
 
-/** 开箱随机池（不含箱子本身） */
 export const ITEM_KINDS: ItemKind[] = [
   'rocket', 'shield', 'pad', 'grow', 'magnet',
   'banana', 'mine', 'snow', 'star', 'glove', 'cake',
@@ -31,23 +31,32 @@ function landPoint(s: MatchState): { x: number; y: number } {
   return { x: 0, y: 0 };
 }
 
-function clearHeld(j: Jelly): void {
-  j.item = null;
-  j.gloveMul = 1;
+function giveItem(j: Jelly, kind: ItemKind): void {
+  if (!j.item) j.item = kind;
+  else j.itemB = kind;
+  j.itemHold = 0;
+}
+export function promoteSpare(j: Jelly): void {
+  if (j.item || !j.itemB) return;
+  j.item = j.itemB;
+  j.itemB = null;
+  j.itemHold = 0;
+}
+export function swapHeld(j: Jelly): void {
+  if (!j.item && !j.itemB) return;
+  const next = j.itemB;
+  j.itemB = j.item;
+  j.item = next;
+  j.itemHold = 0;
 }
 
 function placeHazard(s: MatchState, kind: HazardKind, j: Jelly): void {
   const cfg = GAME.items[kind];
-  const h: Hazard = {
-    kind,
-    x: j.x,
-    y: j.y,
-    life: cfg.life,
-    radius: cfg.radius,
-    ownerId: j.id,
-    arm: cfg.arm,
-  };
-  s.hazards.push(h);
+  s.hazards.push({ kind, x: j.x, y: j.y, life: cfg.life, radius: cfg.radius, ownerId: j.id, arm: cfg.arm });
+}
+
+function popItem(s: MatchState, j: Jelly, kind: string): void {
+  s.fx.push({ type: 'item', x: j.x, y: j.y, color: ITEM_COLORS[kind] ?? 0xffffff });
 }
 
 function growOne(j: Jelly): void {
@@ -65,16 +74,14 @@ function openBox(s: MatchState, jellyId: number): void {
   const j = s.jellies[jellyId];
   if (!j) return;
   const kind = ITEM_KINDS[s.rng.int(ITEM_KINDS.length)];
-  clearHeld(j);
-  j.item = kind;
-  j.itemHold = 0;
+  giveItem(j, kind);
   const text = `获得${lootBanner(kind)}`;
+  popItem(s, j, kind);
   if (j.isPlayer) {
     s.banner = text;
     s.bannerT = Math.min(GAME.events.banner, 1.2);
     s.fx.push({ type: 'banner', text });
   }
-  s.fx.push({ type: 'eat', x: j.x, y: j.y, id: j.id });
 }
 
 /** 释放手持道具。拳套 / 雪球改为下一次冲刺才消耗。 */
@@ -97,7 +104,11 @@ export function useHeldItem(s: MatchState, j: Jelly): void {
     j.gloveMul = 2;
     text = '下一次冲刺冰冻';
   }
-  if (kind !== 'glove' && kind !== 'snow') j.item = null;
+  popItem(s, j, kind);
+  if (kind !== 'glove' && kind !== 'snow') {
+    j.item = null;
+    promoteSpare(j);
+  }
   if (j.isPlayer) {
     s.banner = text;
     s.bannerT = 1.1;
@@ -143,10 +154,10 @@ function mineBlast(s: MatchState, h: Hazard): void {
     if (!o.alive || o.airT > 0) continue;
     const dx = o.x - h.x;
     const dy = o.y - h.y;
-    const dist = Math.hypot(dx, dy) || 0.0001;
+    const dist = Math.hypot(dx, dy);
     if (dist > cfg.blast) continue;
-    const nx = dx / dist;
-    const ny = dy / dist;
+    const nx = dist < 0.2 ? Math.cos(o.facing) : dx / dist;
+    const ny = dist < 0.2 ? Math.sin(o.facing) : dy / dist;
     const force = cfg.force * (1 - dist / cfg.blast);
     o.vx += nx * force;
     o.vy += ny * force;
@@ -210,15 +221,17 @@ function tickHazards(s: MatchState, dt: number): void {
   }
 }
 
-/** 冰冻时无法转向；火箭降低转向灵敏度。 */
+/** 冰冻停步。火箭只削弱侧向，正前方仍按加速倍率走。 */
 export function scaleInput(j: Jelly, cmd: { x: number; y: number }): { x: number; y: number } {
   if (j.freezeT > 0) return { x: 0, y: 0 };
   if (j.rocket <= 0) return cmd;
   const t = GAME.items.rocket.turnScale;
-  return { x: cmd.x * t, y: cmd.y * t };
+  const fx = Math.cos(j.facing);
+  const fy = Math.sin(j.facing);
+  const forward = cmd.x * fx + cmd.y * fy;
+  return { x: forward * fx + (cmd.x - forward * fx) * t, y: forward * fy + (cmd.y - forward * fy) * t };
 }
 
-/** 开局就放几只箱子，避免等刷新才看得到。 */
 export function seedItems(s: MatchState, count = 2): void {
   for (let i = 0; i < count; i += 1) {
     const point = landPoint(s);
@@ -243,14 +256,13 @@ export function tickItems(s: MatchState, dt: number): void {
   }
 
   for (const j of s.jellies) {
-    if (j.item) j.itemHold += dt;
+    if (j.item || j.itemB) j.itemHold += dt;
     if (j.shield > 0) j.shield = Math.max(0, j.shield - dt);
     if (j.rocket > 0) j.rocket = Math.max(0, j.rocket - dt);
     if (j.star > 0) j.star = Math.max(0, j.star - dt);
     if (j.freezeT > 0) j.freezeT = Math.max(0, j.freezeT - dt);
     if (j.airT > 0) {
       j.airT = Math.max(0, j.airT - dt);
-      // 弹起视觉：短暂上抛再落下，但不算出界坠落
       if (j.alive) {
         j.fallVy -= 22 * dt;
         j.fallY += j.fallVy * dt;

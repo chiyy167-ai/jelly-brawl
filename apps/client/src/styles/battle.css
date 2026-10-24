@@ -13,7 +13,9 @@
 .hud-title { font-size: 18px; }
 .hud-level { font-size: 14px; background: rgba(255, 79, 123, 0.9); }
 .hud-timer { font-size: 22px; padding: 6px 16px; font-variant-numeric: tabular-nums; }
-.hud-pause { pointer-events: auto; width: 46px; height: 42px; justify-content: center; padding: 0; font-size: 14px; }
+.hud-pause, .hud-cam { pointer-events: auto; height: 42px; justify-content: center; }
+.hud-pause { width: 46px; padding: 0; font-size: 14px; }
+.hud-cam { padding: 0 12px; font-size: 15px; }
 
 /* 摇杆：占左半屏，默认显示在左下角 */
 .joy-zone { position: absolute; z-index: 3; left: 0; top: 18%; bottom: 0; width: 50%; touch-action: none; }
@@ -40,6 +42,13 @@
 .skill-btn b { font-size: 16px; line-height: 1; }
 .skill-btn span { font-size: 13px; font-weight: 800; line-height: 1.1; max-width: 96px; }
 .skill-btn:active { transform: translateY(2px); box-shadow: 0 3px 0 #c56a00; }
+.swap-btn {
+  position: absolute; z-index: 4; right: calc(36px + var(--safe-r)); bottom: calc(244px + var(--safe-b));
+  min-width: 108px; height: 48px; padding: 4px 10px; border-radius: 16px; border: 3px solid #fff;
+  background: linear-gradient(180deg, #d7ecff, #7eb6ff); color: #1d3f86; font-weight: 900; font-size: 14px;
+  box-shadow: 0 4px 0 #3d6ec4; touch-action: none;
+}
+.swap-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #3d6ec4; }
 .dash-btn:active, .dash-charging { transform: scale(0.94); }
 .dash-charging { box-shadow: 0 3px 0 #4b22a0, 0 0 30px rgba(255, 60, 80, 0.7); }
 .key-hint { position: absolute; z-index: 2; left: 50%; bottom: calc(8px + var(--safe-b)); transform: translateX(-50%); margin: 0; font-size: 12px; opacity: 0.8; text-shadow: 0 1px 2px #000; white-space: nowrap; }
@@ -94,6 +103,7 @@
   .joy-knob { width: 54px; height: 54px; }
   .dash-btn { right: calc(20px + var(--safe-r)); bottom: calc(18px + var(--safe-b)); }
   .skill-btn { right: calc(28px + var(--safe-r)); bottom: calc(148px + var(--safe-b)); height: 54px; }
+  .swap-btn { right: calc(28px + var(--safe-r)); bottom: calc(210px + var(--safe-b)); height: 40px; }
 }
 /* 竖屏：缩圈横幅放到 HUD 下方，避免重叠 */
 @media (orientation: portrait) {

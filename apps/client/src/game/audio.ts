@@ -87,6 +87,10 @@ export const sfx = {
     tone(180, 0.12, 'sawtooth', 0.04, 60);
   },
   eat: () => tone(660, 0.1, 'sine', 0.055, 990),
+  item: () => {
+    tone(660, 0.07, 'triangle', 0.05);
+    setTimeout(() => tone(880, 0.1, 'triangle', 0.045), 60);
+  },
   fall: () => tone(320, 0.26, 'triangle', 0.06, 70),
   shrink: () => tone(200, 0.22, 'sawtooth', 0.04, 120),
   tick: () => tone(880, 0.06, 'square', 0.035),
@@ -105,6 +109,7 @@ export function playFx(e: FxEvent): void {
   else if (e.type === 'fall') sfx.fall();
   else if (e.type === 'shrink') sfx.shrink();
   else if (e.type === 'dash') sfx.dash();
+  else if (e.type === 'item') sfx.item();
 }
 
 /** 对战 BGM：轻快琶音循环，不抢音效 */

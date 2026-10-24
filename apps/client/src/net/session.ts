@@ -152,7 +152,10 @@ class NetSession {
   }
 
   sendInput(cmd: InputCmd): void {
-    const m: InputMsg = [Math.round(cmd.x * 100) / 100, Math.round(cmd.y * 100) / 100, cmd.charge ? 1 : 0, cmd.use ? 1 : 0];
+    const m: InputMsg = [
+      Math.round(cmd.x * 100) / 100, Math.round(cmd.y * 100) / 100,
+      cmd.charge ? 1 : 0, cmd.use ? 1 : 0, cmd.swap ? 1 : 0,
+    ];
     this.room?.send('input', m);
   }
 

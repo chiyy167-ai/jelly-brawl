@@ -3,6 +3,7 @@ import { Room, type Client } from '@colyseus/core';
 import { GAME } from '../../client/src/game/config';
 import { botSeat, createNetMatch, matchResult, stepMatch, type RosterSeat } from '../../client/src/game/sim';
 import { resolveMap } from '../../client/src/game/maps';
+import { noteJoin, noteLeave } from './online';
 import type { InputCmd, MapId, MatchState } from '../../client/src/game/types';
 import {
   CODE_ALPHABET, CODE_LENGTH, cleanProfile, packSnap,
@@ -57,7 +58,7 @@ export class JellyRoom extends Room {
         x /= len;
         y /= len;
       }
-      this.cmds[seat] = { x, y, charge: m[2] === 1, use: m[3] === 1 };
+      this.cmds[seat] = { x, y, charge: m[2] === 1, use: m[3] === 1, swap: m[4] === 1 };
     });
     this.setSimulationInterval((ms) => this.tick(ms / 1000), 1000 / 60);
   }
@@ -67,9 +68,11 @@ export class JellyRoom extends Room {
     this.profiles.set(client.sessionId, cleanProfile(options));
     this.order.push(client.sessionId);
     this.sendLobby();
+    noteJoin();
   }
 
   onLeave(client: Client): void {
+    noteLeave();
     this.profiles.delete(client.sessionId);
     this.order = this.order.filter((id) => id !== client.sessionId);
     const seat = this.seatOf.get(client.sessionId);
@@ -135,7 +138,10 @@ export class JellyRoom extends Room {
     }
     for (const seat of Object.keys(this.cmds)) {
       const cmd = this.cmds[Number(seat)];
-      if (cmd) cmd.use = false;
+      if (cmd) {
+        cmd.use = false;
+        cmd.swap = false;
+      }
     }
     this.snapAcc += dt;
     if (this.snapAcc >= 1 / GAME.online.snapHz) {

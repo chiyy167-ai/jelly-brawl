@@ -5,7 +5,7 @@ import { GAME, platformTarget, shrinkTimes } from './config';
 import { computeRewards } from './economy';
 import { scheduleEvents, tickEvents } from './events';
 import { collidePuddings, tickGhost } from './ghost';
-import { seedItems, tickItems, useHeldItem } from './items';
+import { seedItems, swapHeld, tickItems, useHeldItem } from './items';
 import { applyLevel, collideAll, eatBlobs, eliminate, fallDown, integrate, steer } from './physics';
 import { makeRng } from './rng';
 import { awardRound, blankSeries } from './series';
@@ -29,7 +29,7 @@ function makeJelly(id: number, name: string, skinId: string, isPlayer: boolean, 
     alive: true, elimTime: 0, fallY: 0, fallVy: 0,
     lastHitBy: -1, lastHitTime: -99, kos: 0, eaten: 0,
     hits: 0, selfOut: 0, puddings: 0,
-    item: null, shield: 0, magnet: 0, rocket: 0, star: 0, freezeT: 0, airT: 0,
+    item: null, itemB: null, shield: 0, magnet: 0, rocket: 0, star: 0, freezeT: 0, airT: 0,
     ghostCd: 0, gloveMul: 1, itemHold: 0,
     aiT: 0, aiChargeT: 0, wish: { x: 0, y: 0, charge: false },
   };
@@ -117,6 +117,7 @@ function resetRoundFields(s: MatchState, seed: number): void {
     j.lastHitTime = -99;
     // kos / eaten / 称号统计跨局累计，方便系列赛结算
     j.item = null;
+    j.itemB = null;
     j.shield = 0;
     j.magnet = 0;
     j.rocket = 0;
@@ -258,6 +259,10 @@ export function stepMatch(s: MatchState, inputs: Record<number, InputCmd>, dt: n
   for (const j of s.jellies) {
     if (!j.alive) continue;
     const cmd = j.human ? (inputs[j.id] ?? IDLE) : j.wish;
+    if (cmd.swap) {
+      swapHeld(j);
+      if (cmd !== IDLE) cmd.swap = false;
+    }
     if (cmd.use) {
       useHeldItem(s, j);
       if (cmd !== IDLE) cmd.use = false;

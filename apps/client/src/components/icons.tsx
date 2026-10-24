@@ -17,7 +17,24 @@ export const IconCrown = ({ size = 36 }: P) => (
   <svg width={size} height={size} viewBox="0 0 36 36" aria-hidden><path d="M4 12l7 6 7-11 7 11 7-6-3 17H7z" fill="currentColor" /><rect x="7" y="30" width="22" height="3" rx="1.5" fill="currentColor" /></svg>
 );
 export const IconGift = ({ size = 36 }: P) => (
-  <svg width={size} height={size} viewBox="0 0 36 36" aria-hidden><rect x="4" y="12" width="28" height="7" rx="2" fill="#ffcf3f" /><rect x="6" y="19" width="24" height="14" rx="2" fill="#ff5a6e" /><rect x="16" y="12" width="4" height="21" fill="#ffcf3f" /><path d="M18 12c-3-6-9-7-9-3s6 3 9 3zm0 0c3-6 9-7 9-3s-6 3-9 3z" fill="#ffcf3f" /></svg>
+  <svg width={size} height={size} viewBox="0 0 36 36" aria-hidden>
+    <rect x="5" y="16" width="26" height="15" rx="4" fill="#ff5d8a" />
+    <rect x="3" y="12" width="30" height="7" rx="3" fill="#ffd56a" />
+    <rect x="16" y="12" width="4" height="19" fill="#fff6c8" />
+    <path d="M18 12c-1-5-8-7-8-3.2C10 12 14 12 18 12zm0 0c1-5 8-7 8-3.2C26 12 22 12 18 12z" fill="#fff" />
+    <path d="M18 22c-2.2 0-3.6 1.4-3.6 1.4S16 21 18 21s3.6 2.4 3.6 2.4S20.2 22 18 22z" fill="#fff" />
+  </svg>
+);
+/** 道具图鉴：金色问号箱，和每日礼物区分开 */
+export const IconCodex = ({ size = 36 }: P) => (
+  <svg width={size} height={size} viewBox="0 0 36 36" aria-hidden>
+    <path d="M8 14h20l2 4H6z" fill="#ffe07a" />
+    <rect x="7" y="17" width="22" height="14" rx="3" fill="#f0a429" />
+    <rect x="7" y="17" width="22" height="4" fill="#c47d12" />
+    <path d="M16.2 22.2c0-1.6 1.1-2.4 2.2-2.4 1 0 1.7.6 1.7 1.4 0 1.1-1.2 1.5-2 2.1v1.1" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="18.1" cy="27.6" r="1" fill="#fff" />
+    <path d="M27 8l.8 1.8 1.9.3-1.4 1.3.4 1.9-1.7-.9-1.7.9.4-1.9-1.4-1.3 1.9-.3z" fill="#fff6c2" />
+  </svg>
 );
 export const IconBook = ({ size = 36 }: P) => (
   <svg width={size} height={size} viewBox="0 0 36 36" aria-hidden><circle cx="18" cy="12" r="7" fill="#ffd9b0" /><path d="M5 31c0-7 6-11 13-11s13 4 13 11z" fill="#2f7cf6" /><path d="M10 6l8-3 8 3-8 3z" fill="#1e2b5c" /></svg>

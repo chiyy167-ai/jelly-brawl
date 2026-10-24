@@ -1,7 +1,8 @@
 /** 圆形刚体物理：移动、蓄力冲刺、碰撞、吃块、出界。只改 state，不碰渲染。 */
 import { GAME } from './config';
 import { inHole } from './events';
-import { scaleInput } from './items';
+import { promoteSpare, scaleInput } from './items';
+import { ITEM_COLORS } from './maps';
 import type { FxEvent, InputCmd, Jelly, MatchState } from './types';
 
 export function applyLevel(j: Jelly): void {
@@ -48,6 +49,8 @@ function launch(j: Jelly, fx?: FxEvent[]): void {
   if (armedGlove) {
     j.item = null;
     j.gloveMul = 1;
+    promoteSpare(j);
+    fx?.push({ type: 'item', x: j.x, y: j.y, color: ITEM_COLORS.glove });
   }
   if (j.star > 0) force *= GAME.items.star.impactMul;
   j.vx += Math.cos(j.facing) * force;
@@ -150,8 +153,8 @@ function bounce(s: MatchState, a: Jelly, b: Jelly): void {
     b.vy += (fix * ny) / mb;
   }
 
-  applySnow(a, b);
-  applySnow(b, a);
+  applySnow(s, a, b);
+  applySnow(s, b, a);
 
   if (a.hurtCd > 0 || b.hurtCd > 0) return;
   a.hurtCd = b.hurtCd = clash ? 0.4 : 0.35;
@@ -174,10 +177,12 @@ function bounce(s: MatchState, a: Jelly, b: Jelly): void {
 }
 
 /** 冰冻雪球：冲刺命中时冻结对方 */
-function applySnow(attacker: Jelly, victim: Jelly): void {
+function applySnow(s: MatchState, attacker: Jelly, victim: Jelly): void {
   if (attacker.item !== 'snow' || attacker.gloveMul <= 1 || attacker.dashT <= 0) return;
   attacker.item = null;
   attacker.gloveMul = 1;
+  promoteSpare(attacker);
+  s.fx.push({ type: 'item', x: victim.x, y: victim.y, color: ITEM_COLORS.snow });
   victim.freezeT = GAME.items.snow.freeze;
   victim.vx *= 0.15;
   victim.vy *= 0.15;
