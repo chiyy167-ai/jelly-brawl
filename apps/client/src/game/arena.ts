@@ -1,10 +1,11 @@
 /** 3D 擂台：六边形彩色地砖、石头底座、缩圈红色警戒圈、远处浮空岛。 */
 import * as THREE from 'three';
+import { buildMapDecor, tickDecor, type DecorBundle } from './arenaDecor';
 import { GAME } from './config';
+import { MAPS, type MapTheme } from './maps';
 import { makeRng } from './rng';
-import type { MatchState } from './types';
+import type { MapId, MatchState } from './types';
 
-const TILE_COLORS = [0xff7eb6, 0x4fb8ff, 0xffd84a, 0x6fdc6a, 0xb07cff, 0xff9f4a];
 const DANGER = new THREE.Color(0xff2a3a);
 
 interface Tile {
@@ -28,8 +29,10 @@ export class Arena {
   private dummy = new THREE.Object3D();
   private tmpColor = new THREE.Color();
   private owned: { dispose(): void }[] = [];
+  private decor: DecorBundle;
 
-  constructor(seed: number) {
+  constructor(seed: number, mapId: MapId = 'candy') {
+    const theme: MapTheme = MAPS[mapId] ?? MAPS.candy;
     const R = GAME.tile.radius;
     const H = GAME.tile.height;
     // 尖顶六边形网格（CylinderGeometry 6 段的尖角朝 +Z）
@@ -42,7 +45,7 @@ export class Arena {
         const z = R * 1.5 * r;
         const dist = Math.hypot(x, z);
         if (dist > max - R * 0.2) continue;
-        const color = new THREE.Color(TILE_COLORS[rng.int(TILE_COLORS.length)]);
+        const color = new THREE.Color(theme.tiles[rng.int(theme.tiles.length)]);
         this.tiles.push({ x, z, dist, color, fallY: 0, fallV: 0, spin: rng.next() - 0.5, gone: false });
       }
     }
@@ -56,7 +59,7 @@ export class Arena {
 
     // 石头底座：随平台半径缩放，边缘就是真实的淘汰边界
     const baseGeo = new THREE.CylinderGeometry(1, 0.82, 3.2, 48);
-    const baseMat = new THREE.MeshStandardMaterial({ color: 0x8c7fb0, roughness: 0.85 });
+    const baseMat = new THREE.MeshStandardMaterial({ color: theme.base, roughness: 0.85 });
     this.base = new THREE.Mesh(baseGeo, baseMat);
     this.base.position.y = -H / 2 - 1.6 + 0.05;
     this.base.receiveShadow = true;
@@ -75,18 +78,28 @@ export class Arena {
     this.wall.position.y = H / 2 + 0.7;
     this.group.add(this.wall);
 
-    this.addIslands(seed);
-    this.owned.push(tileGeo, tileMat, baseGeo, baseMat, ringMat, this.ring.geometry, wallMat, wallMat.map!, this.wall.geometry);
+    this.addIslands(seed, theme, mapId);
+    this.decor = buildMapDecor(mapId, seed, theme);
+    this.group.add(this.decor.group);
+    this.owned.push(
+      tileGeo, tileMat, baseGeo, baseMat, ringMat, this.ring.geometry, wallMat, wallMat.map!, this.wall.geometry,
+      ...this.decor.owned,
+    );
   }
 
-  private addIslands(seed: number): void {
-    const rock = new THREE.MeshStandardMaterial({ color: 0x9a86c4, roughness: 0.9 });
-    const grass = new THREE.MeshStandardMaterial({ color: 0x7ddc6a, roughness: 0.7 });
+  private addIslands(seed: number, theme: MapTheme, mapId: MapId): void {
+    const rock = new THREE.MeshStandardMaterial({ color: theme.islandRock, roughness: 0.9 });
+    const grass = new THREE.MeshStandardMaterial({ color: theme.islandTop, roughness: 0.7 });
     const rockGeo = new THREE.CylinderGeometry(1, 0.6, 1, 7);
     const grassGeo = new THREE.CylinderGeometry(1.05, 1.05, 0.25, 7);
     const rng = makeRng(seed + 7);
     for (let i = 0; i < 11; i += 1) {
       const a = (i / 11) * Math.PI * 2 + rng.next() * 0.5;
+      // 火山图留出正后方空档，避免挡主火山口
+      if (mapId === 'volcano') {
+        const nz = Math.sin(a);
+        if (nz < -0.35) continue;
+      }
       const d = 21 + rng.range(0, 9);
       const s = rng.range(1.4, 3.4);
       const tall = rng.range(2, 8);
@@ -102,8 +115,9 @@ export class Arena {
     this.owned.push(rock, grass, rockGeo, grassGeo);
   }
 
-  /** 每帧根据对局状态更新：掉落地砖、危险闪烁、警戒圈。 */
+  /** 每帧根据对局状态更新：掉落地砖、危险闪烁、警戒圈、地标动画。 */
   update(s: MatchState, dt: number, time: number): void {
+    tickDecor(this.decor, time);
     const R = GAME.tile.radius;
     const warn = s.warn;
     const flash = 0.5 + 0.5 * Math.sin(time * 14);

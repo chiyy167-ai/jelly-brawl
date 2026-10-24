@@ -2,12 +2,18 @@
 import * as THREE from 'three';
 import { Arena } from './arena';
 import { playFx } from './audio';
+import { BattlePropLayer } from './battleProps';
 import { GAME } from './config';
 import { createJelly, type JellyObject } from './jellyModel';
+import { MAPS } from './maps';
 import type { MatchState } from './types';
 
 const BLOB_COLORS = [0xff6fa8, 0x45b6ff, 0xffd84a, 0x6fdc6a, 0xb07cff, 0xff9f4a];
 const RED = new THREE.Color(0xff2030);
+const SHIELD = new THREE.Color(0x4fb8ff);
+const ICE = new THREE.Color(0xa8e8ff);
+const STAR = new THREE.Color(0xffd84a);
+const ROCKET = new THREE.Color(0xff6a20);
 
 interface JellyView {
   obj: JellyObject;
@@ -32,6 +38,7 @@ export class BattleScene {
   private sparks: Spark[] = [];
   private marker: THREE.Mesh;
   private chargeRing: THREE.Mesh;
+  private props: BattlePropLayer;
   private camPos = new THREE.Vector3();
   private owned: { dispose(): void }[] = [];
   private portrait = false;
@@ -44,10 +51,12 @@ export class BattleScene {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     host.appendChild(this.renderer.domElement);
-    this.scene.fog = new THREE.Fog(0xbfe4ff, 75, 160);
+    const theme = MAPS[s.mapId] ?? MAPS.candy;
+    // 近雾略远一点，保证擂台外的火山 / 棒棒糖不被吃掉
+    this.scene.fog = new THREE.Fog(theme.fog, 95, 180);
 
-    this.scene.add(new THREE.HemisphereLight(0xe6f6ff, 0x7a5fa8, 1.5));
-    const sun = new THREE.DirectionalLight(0xffffff, 2.4);
+    this.scene.add(new THREE.HemisphereLight(theme.hemiSky, theme.hemiGround, 1.5));
+    const sun = new THREE.DirectionalLight(theme.sun, 2.4);
     sun.position.set(8, 18, 10);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
@@ -58,7 +67,7 @@ export class BattleScene {
     sc.far = 50;
     this.scene.add(sun);
 
-    this.arena = new Arena(s.seed);
+    this.arena = new Arena(s.seed, s.mapId);
     this.scene.add(this.arena.group);
 
     for (const j of s.jellies) {
@@ -92,7 +101,10 @@ export class BattleScene {
     this.chargeRing = new THREE.Mesh(new THREE.RingGeometry(0.85, 1, 48), ringMat);
     this.chargeRing.rotation.x = -Math.PI / 2;
     this.scene.add(this.chargeRing);
-    this.owned.push(blobGeo, sparkGeo, sparkMat, markerMat, this.marker.geometry, ringMat, this.chargeRing.geometry);
+    this.props = new BattlePropLayer(this.scene);
+    this.owned.push(
+      blobGeo, sparkGeo, sparkMat, markerMat, this.marker.geometry, ringMat, this.chargeRing.geometry,
+    );
     this.resize();
   }
 
@@ -137,8 +149,17 @@ export class BattleScene {
       const wob = Math.sin(time * 30) * 0.12 * v.wobble;
       const dash = j.dashT > 0 ? 0.15 : 0;
       v.obj.body.scale.set(1 + c * 0.18 + wob, 1 - c * 0.25 - wob - dash * 0.5, 1 + dash);
-      v.obj.material.emissive.copy(RED).multiplyScalar(c * 0.6);
-      if (!j.alive) root.rotation.z += dt * 4;
+      // 蓄力红光 / 护盾蓝 / 冰冻青 / 能量星金 / 火箭橙
+      if (j.freezeT > 0) v.obj.material.emissive.copy(ICE).multiplyScalar(0.55);
+      else if (j.shield > 0) v.obj.material.emissive.copy(SHIELD).multiplyScalar(0.5 + 0.2 * Math.sin(time * 8));
+      else if (j.star > 0) v.obj.material.emissive.copy(STAR).multiplyScalar(0.45);
+      else if (j.rocket > 0) v.obj.material.emissive.copy(ROCKET).multiplyScalar(0.55);
+      else v.obj.material.emissive.copy(RED).multiplyScalar(c * 0.6);
+      v.obj.material.transparent = true;
+      v.obj.material.opacity = j.alive ? 1 : (j.fallY < -0.5 ? 0.35 : GAME.ghost.alpha);
+      if (!j.alive && j.fallY < -0.2) root.rotation.z += dt * 4;
+      else if (j.dizzy > 0.6) root.rotation.z = Math.sin(time * 20) * 0.35;
+      else root.rotation.z = 0;
     }
     s.blobs.forEach((b, i) => {
       const m = this.blobs[i];
@@ -151,6 +172,7 @@ export class BattleScene {
       m.rotation.set(time * 0.7 + i, time + i, 0);
     });
     this.updateSparks(dt);
+    this.props.update(s, time, topY);
     this.updatePlayerMarks(player, time, topY);
     this.updateCamera(player, s.shake);
     this.renderer.render(this.scene, this.camera);
@@ -228,6 +250,7 @@ export class BattleScene {
   dispose(): void {
     this.views.forEach((v) => v.obj.dispose());
     this.arena.dispose();
+    this.props.dispose();
     this.owned.forEach((o) => o.dispose());
     this.renderer.dispose();
     this.renderer.forceContextLoss();

@@ -27,9 +27,16 @@ img { -webkit-user-drag: none; }
 .page { position: fixed; inset: 0; overflow: hidden; }
 
 /* 天空背景 */
-.sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none;
-  background: radial-gradient(ellipse at 50% 110%, #c9f0ff 0%, transparent 55%), linear-gradient(180deg, #3d9cff 0%, #74c6ff 45%, #c4ecff 100%); transition: filter 0.4s; }
+.sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; transition: filter 0.4s, background 0.4s; }
+.sky-candy {
+  background: radial-gradient(ellipse at 50% 110%, #c9f0ff 0%, transparent 55%), linear-gradient(180deg, #3d9cff 0%, #74c6ff 45%, #c4ecff 100%);
+}
+.sky-volcano {
+  background: radial-gradient(ellipse at 50% 120%, #ff8a3a 0%, transparent 50%), linear-gradient(180deg, #2a0c10 0%, #6a2018 40%, #c45a28 78%, #ffb06a 100%);
+}
+.sky-volcano .cloud { background: #5a3038; opacity: 0.45; }
 .sky-dim { filter: saturate(0.6) brightness(0.75) hue-rotate(-25deg); }
+.sky-volcano.sky-dim { filter: saturate(0.7) brightness(0.65); }
 .cloud { position: absolute; background: #fff; border-radius: 999px; opacity: 0.85; filter: blur(1px); animation: drift 60s linear infinite; }
 .cloud::before, .cloud::after { content: ''; position: absolute; background: inherit; border-radius: 50%; }
 .cloud-a { width: 220px; height: 60px; top: 14%; left: -10%; }

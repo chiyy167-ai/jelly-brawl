@@ -33,7 +33,7 @@ export class NetRunner {
     const start = session.start;
     if (!start) throw new Error('还没有收到开局信息');
     this.you = start.you;
-    this.state = createNetMatch(start.roster, start.seed, start.you);
+    this.state = createNetMatch(start.roster, start.seed, start.you, start.mapId ?? 'candy');
     this.scene = new BattleScene(opt.host, this.state);
     if (session.lastSnap) this.onSnap(session.lastSnap);
     this.offs.push(
@@ -70,13 +70,15 @@ export class NetRunner {
   /** 输入变了立刻发；没变也每 0.2 秒补发一次，防止丢包后卡住 */
   private sendInput(cmd: InputCmd, dt: number): void {
     this.sinceSend += dt;
-    const key = `${cmd.x.toFixed(2)},${cmd.y.toFixed(2)},${cmd.charge}`;
+    const key = `${cmd.x.toFixed(2)},${cmd.y.toFixed(2)},${cmd.charge},${cmd.use ? 1 : 0}`;
     const changed = key !== this.lastSent;
-    // 变化时最多 inputHz 次/秒
-    if (!(changed && this.sinceSend >= 1 / GAME.online.inputHz) && this.sinceSend < 0.2) return;
+    const urgent = cmd.use === true;
+    // 释放技能立刻发；其它变化最多 inputHz 次/秒
+    if (!urgent && !(changed && this.sinceSend >= 1 / GAME.online.inputHz) && this.sinceSend < 0.2) return;
     this.sinceSend = 0;
     this.lastSent = key;
     session.sendInput(cmd);
+    this.opt.input.useQueued = false;
   }
 
   dispose(): void {

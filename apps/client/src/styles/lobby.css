@@ -79,6 +79,27 @@
   border-radius: 20px; background: linear-gradient(180deg, #3a63d8, #1d2a6e); border: 3px solid #8fd3ff; box-shadow: var(--shadow); font-size: 13px; font-weight: 900; }
 .badge-new { position: absolute; top: -10px; right: -8px; padding: 2px 7px; border-radius: 8px; background: #ff3b4a; font-size: 12px; font-style: normal; transform: rotate(8deg); }
 
+.map-pick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 16px; }
+.map-card {
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left;
+  min-height: 96px; padding: 12px 14px; border-radius: 18px; border: 3px solid #fff;
+  color: #fff; font-weight: 800; box-shadow: var(--shadow);
+}
+.map-card strong { font-size: 18px; }
+.map-card span { font-size: 12px; font-weight: 700; opacity: 0.92; line-height: 1.35; }
+.map-card-candy { background: linear-gradient(160deg, #6ec8ff, #2a6de0); }
+.map-card-volcano { background: linear-gradient(160deg, #ff9a4a, #b02814); }
+.map-card.is-on { outline: 3px solid #fff27a; transform: translateY(-2px); }
+.map-picker.room-maps { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.map-chip {
+  min-width: 108px; padding: 8px 14px; border-radius: 999px; font-weight: 900; font-size: 14px;
+  border: 3px solid #fff; box-shadow: var(--shadow); color: #fff;
+}
+.map-chip-candy { background: linear-gradient(180deg, #5eb8ff, #2a6de0); }
+.map-chip-volcano { background: linear-gradient(180deg, #ff8a3a, #c03018); }
+.map-chip.is-on { outline: 3px solid #fff27a; }
+.map-chip:disabled { opacity: 0.55; }
+
 .lobby-bottom { position: absolute; left: calc(14px + var(--safe-l)); right: calc(14px + var(--safe-r)); bottom: calc(12px + var(--safe-b));
   display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
 .lobby-group { display: flex; gap: 10px; }

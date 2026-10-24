@@ -1,11 +1,12 @@
 /**
  * 所有可调数值集中在这里。
- * 数值来自旧版 src/config.js（像素单位），按 1 世界单位 = 25 像素换算。
+ * 世界单位约等于旧版像素 ÷ 25。
  */
 export const GAME = {
   fixedDt: 1 / 60,
   countdown: 3,
-  // 三个体型等级：半径、质量、移速、撞击系数、抗击飞
+  /** 局间记分板停留秒数 */
+  roundPause: 3.2,
   levels: [
     { radius: 1.04, mass: 1, speed: 10.4, impact: 1, resist: 0.75 },
     { radius: 1.44, mass: 1.7, speed: 8.4, impact: 1.45, resist: 1.15 },
@@ -25,19 +26,58 @@ export const GAME = {
     finalAt: 40, roundTime: 60, shrinkDuration: 1.15, warnLead: 3,
   },
   blobs: { max: 6, interval: 3, radius: 0.44, initial: 4 },
-  // 电脑对手：开局 grace 秒内不冲撞；冲刺终点超出 dashSafe×半径 时放弃冲撞
   ai: { interval: 0.28, chargeChance: 0.14, chargeRange: 5, chargeHold: 0.45, edgeSafe: 0.72, grace: 3, dashSafe: 0.8 },
   score: { places: [4, 2, 1, 0, 0, 0], lastHit: 1, lastHitWindow: 3 },
+  /** 正式对战 / 联机打满局数；练习只打 1 局 */
+  series: { rounds: 3, practiceRounds: 1 },
   match: { bots: 5, practiceBots: 3, spawnRadius: 6 },
-  // 联机：每房最多 4 个真人，人数不够时用电脑补到 seats 个；状态快照 20 次/秒，输入 30 次/秒
   online: { maxHumans: 4, seats: 4, snapHz: 20, inputHz: 30, resultDelay: 1.6 },
   fall: { gravity: 30, hideAfter: 2 },
   tile: { radius: 1.05, height: 0.7 },
-  // 竖屏时镜头按 portraitFit / 宽高比 拉远，并更俯视一些
   camera: { fov: 40, height: 14.5, back: 17.5, portraitFit: 1.2, portraitTilt: 1.3, follow: 0.35 },
+  events: {
+    minCount: 1, maxCount: 2, windowStart: 15, windowEnd: 45, minGap: 8, banner: 1.8,
+    rotate: { omega: 0.55, edgeAccel: 3.6, duration: 12 },
+    collapse: { sectorDeg: 52, warn: 2, minDist: 1.5 },
+    ice: { frictionScale: 0.2, duration: 10 },
+    gravity: { duration: 12, interval: 3, warn: 1, impulse: 10.4 },
+  },
+  items: {
+    /** 开局约 3 秒掉第一箱，之后每 8 秒一箱 */
+    every: 8, firstAt: 3, maxOnField: 3, radius: 0.9, fallSeconds: 0.4,
+    shield: { duration: 3.2 },
+    magnet: { duration: 5, radius: 6.4, pull: 8.8 },
+    rocket: { duration: 2.2, speedMul: 1.75, turnScale: 0.35 },
+    star: { duration: 4, speedMul: 1.35, impactMul: 1.45 },
+    glove: { knockMul: 2.4 },
+    snow: { freeze: 2.2 },
+    pad: { life: 12, radius: 1.5, impulse: 22, air: 0.85, arm: 0.35 },
+    banana: { life: 10, radius: 1.15, slip: 1.4, spin: 18, arm: 0.25 },
+    mine: { life: 14, radius: 1.2, blast: 4.4, force: 26, arm: 0.55 },
+  },
+  ghost: { puddingRadius: 1.44, puddingMass: 0.9, puddingLife: 8, cooldown: 10, alpha: 0.45 },
+  /** 整场结算奖励（练习再 × practiceScale） */
+  economy: {
+    practiceScale: 0.5,
+    onlineBonusXp: 10,
+    joinXp: 20,
+    kosXp: 5,
+    kosCoins: 8,
+    placeXp: [80, 50, 35, 20, 15, 10],
+    placeCoins: [60, 35, 22, 12, 8, 5],
+    winGems: 5,
+    practiceWinGems: 1,
+    dailyCoins: 40,
+    dailyGems: 1,
+    gemCostCoins: 100,
+  },
 };
 
-/** 按局内时间给出平台目标半径（与旧版规则一致）。 */
+/** 升到 level+1 所需经验（当前等级内进度条分母） */
+export function xpToNext(level: number): number {
+  return 40 + Math.max(1, level) * 20;
+}
+
 export function platformTarget(time: number): number {
   const p = GAME.platform;
   if (time < p.shrinkAfter) return p.maxRadius;
@@ -48,7 +88,6 @@ export function platformTarget(time: number): number {
   return p.maxRadius - span * Math.min(1, steps / total);
 }
 
-/** 所有缩圈发生的时刻。 */
 export function shrinkTimes(): number[] {
   const p = GAME.platform;
   const list: number[] = [];

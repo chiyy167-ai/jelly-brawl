@@ -15,7 +15,8 @@ for (let i = 0; i < Number(count); i += 1) {
   setInterval(() => {
     angle += (Math.random() - 0.5) * 0.8;
     const charge = Math.random() < 0.15 ? 1 : 0;
-    room.send('input', [Math.cos(angle) * 0.8, Math.sin(angle) * 0.8, charge] satisfies InputMsg);
+    const use = Math.random() < 0.04 ? 1 : 0;
+    room.send('input', [Math.cos(angle) * 0.8, Math.sin(angle) * 0.8, charge, use] satisfies InputMsg);
   }, 100);
   room.onLeave(() => process.exit(0));
   console.log(`测试${i + 1}号 已加入 ${code}`);

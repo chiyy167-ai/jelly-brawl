@@ -1,7 +1,8 @@
 /** 全局页面状态：当前页面、对局模式、选中皮肤、上一局结果。 */
 import { createContext, useCallback, useContext, useReducer, type Dispatch, type ReactNode } from 'react';
-import type { GameMode, MatchResult } from '../game/types';
+import type { GameMode, MapId, MatchResult } from '../game/types';
 import { pushMatchResult } from './cloudHistory';
+import { applyMatchRewards } from './progress';
 import { addHistory, loadSkin, saveSkin } from './storage';
 
 export type Page = 'loading' | 'lobby' | 'battle' | 'skins' | 'result' | 'room';
@@ -10,6 +11,8 @@ export interface AppState {
   page: Page;
   mode: GameMode;
   skinId: string;
+  /** 大厅选中的决斗场；本地开局用，联机由房主 StartMsg 覆盖 */
+  mapId: MapId;
   result: MatchResult | null;
   /** 每开一局 +1，用来让战斗页完全重新创建 */
   battleId: number;
@@ -21,12 +24,13 @@ export type Action =
   | { type: 'loaded' }
   | { type: 'goLobby'; notice?: string }
   | { type: 'startBattle'; mode: GameMode }
+  | { type: 'setMap'; mapId: MapId }
   | { type: 'replay' }
   | { type: 'openSkins' }
   | { type: 'selectSkin'; skinId: string }
   | { type: 'finishBattle'; result: MatchResult }
   | { type: 'enterRoom' }
-  | { type: 'netStart' }
+  | { type: 'netStart'; mapId?: MapId }
   | { type: 'clearNotice' };
 
 function reducer(state: AppState, action: Action): AppState {
@@ -37,6 +41,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, page: 'lobby', notice: action.notice ?? '' };
     case 'startBattle':
       return { ...state, page: 'battle', mode: action.mode, battleId: state.battleId + 1 };
+    case 'setMap':
+      return { ...state, mapId: action.mapId };
     case 'replay':
       // 联机的“再玩一局”是回到房间等房主开局
       return state.mode === 'online' ? { ...state, page: 'room' } : { ...state, page: 'battle', battleId: state.battleId + 1 };
@@ -49,7 +55,13 @@ function reducer(state: AppState, action: Action): AppState {
     case 'enterRoom':
       return { ...state, page: 'room', mode: 'online' };
     case 'netStart':
-      return { ...state, page: 'battle', mode: 'online', battleId: state.battleId + 1 };
+      return {
+        ...state,
+        page: 'battle',
+        mode: 'online',
+        battleId: state.battleId + 1,
+        mapId: action.mapId ?? state.mapId,
+      };
     case 'clearNotice':
       return { ...state, notice: '' };
     default:
@@ -64,6 +76,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     page: 'loading' as Page,
     mode: 'match' as GameMode,
     skinId: loadSkin(),
+    mapId: 'candy' as const,
     result: null,
     battleId: 0,
     notice: '',
@@ -72,8 +85,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const dispatch = useCallback<Dispatch<Action>>((action) => {
     if (action.type === 'selectSkin') saveSkin(action.skinId);
     if (action.type === 'finishBattle') {
+      applyMatchRewards(action.result);
       addHistory(action.result);
-      // 已登录则异步写入云端，失败不影响本地结算
       void pushMatchResult(action.result);
     }
     rawDispatch(action);

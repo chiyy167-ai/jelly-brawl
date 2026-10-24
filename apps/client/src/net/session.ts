@@ -147,12 +147,12 @@ class NetSession {
     this.room?.send('profile', p);
   }
 
-  startMatch(): void {
-    this.room?.send('start');
+  startMatch(mapId: 'candy' | 'volcano' = 'candy'): void {
+    this.room?.send('start', { mapId });
   }
 
   sendInput(cmd: InputCmd): void {
-    const m: InputMsg = [Math.round(cmd.x * 100) / 100, Math.round(cmd.y * 100) / 100, cmd.charge ? 1 : 0];
+    const m: InputMsg = [Math.round(cmd.x * 100) / 100, Math.round(cmd.y * 100) / 100, cmd.charge ? 1 : 0, cmd.use ? 1 : 0];
     this.room?.send('input', m);
   }
 

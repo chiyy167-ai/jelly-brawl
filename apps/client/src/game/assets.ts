@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { loadPropModels } from './propModels';
 
 export const MODEL_URL = `${import.meta.env.BASE_URL}models/red-jelly.glb`;
 const PREVIEW_URL = `${import.meta.env.BASE_URL}models/red-jelly-lite.glb`;
@@ -64,16 +65,20 @@ export function loadAssets(onProgress: (p: LoadProgress) => void): Promise<Jelly
     lastProgress = p;
     listeners.forEach((fn) => fn(p));
   };
+  // 道具 glb 与果冻并行下载
+  void loadPropModels();
   pending = new Promise<JellyTemplate>((resolve, reject) => {
     const loader = new GLTFLoader();
     loader.load(
       MODEL_URL,
       (gltf) => {
-        emit({ ratio: 0.95, loadedBytes: 0, label: '正在准备果冻...' });
+        emit({ ratio: 0.92, loadedBytes: 0, label: '正在准备果冻与道具...' });
         template = buildTemplate(gltf.scene);
-        emit({ ratio: 1, loadedBytes: 0, label: '加载完成！' });
-        listeners.clear();
-        resolve(template);
+        void loadPropModels().finally(() => {
+          emit({ ratio: 1, loadedBytes: 0, label: '加载完成！' });
+          listeners.clear();
+          resolve(template!);
+        });
       },
       (e) => {
         // 下载占进度的 0~90%，解析贴图占剩下部分

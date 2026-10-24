@@ -7,17 +7,19 @@ export interface InputSource {
   stickY: number;
   /** 冲撞按钮是否按住 */
   dashHeld: boolean;
+  /** 技能键点按，读走前一直为 true */
+  useQueued: boolean;
 }
 
 export function createInput(): InputSource {
-  return { stickX: 0, stickY: 0, dashHeld: false };
+  return { stickX: 0, stickY: 0, dashHeld: false, useQueued: false };
 }
 
 const keys = new Set<string>();
 
 function onKey(e: KeyboardEvent, down: boolean): void {
   const code = e.code;
-  if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(code)) {
+  if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyE'].includes(code)) {
     e.preventDefault();
     if (down) keys.add(code);
     else keys.delete(code);
@@ -40,7 +42,7 @@ export function bindKeyboard(): () => void {
   };
 }
 
-/** 合并触屏与键盘，得到这一帧的指令 */
+/** 合并触屏与键盘。use 保留到调用方取走。 */
 export function readCmd(src: InputSource): InputCmd {
   let x = src.stickX;
   let y = src.stickY;
@@ -51,5 +53,9 @@ export function readCmd(src: InputSource): InputCmd {
     x = kx / len;
     y = ky / len;
   }
-  return { x, y, charge: src.dashHeld || keys.has('Space') };
+  if (keys.has('KeyE')) {
+    src.useQueued = true;
+    keys.delete('KeyE');
+  }
+  return { x, y, charge: src.dashHeld || keys.has('Space'), use: src.useQueued };
 }

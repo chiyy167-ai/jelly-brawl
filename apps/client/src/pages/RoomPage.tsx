@@ -2,12 +2,14 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { SkyBackground } from '../components/SkyBackground';
 import { GAME } from '../game/config';
+import { MAPS, MAP_IDS } from '../game/maps';
 import { renderThumbnails } from '../game/stage';
+import type { MapId } from '../game/types';
 import { session } from '../net/session';
 import { useApp } from '../state/AppState';
 
 export function RoomPage() {
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
   useSyncExternalStore(session.subscribe, session.getVersion);
   const [copied, setCopied] = useState(false);
   const lobby = session.lobby;
@@ -39,9 +41,14 @@ export function RoomPage() {
 
   const seats = Array.from({ length: GAME.online.maxHumans }, (_, i) => players[i] ?? null);
   const playing = lobby?.phase === 'playing';
+  const pickMap = (mapId: MapId) => {
+    if (!session.isHost) return;
+    dispatch({ type: 'setMap', mapId });
+  };
+
   return (
     <div className="page room-page">
-      <SkyBackground />
+      <SkyBackground theme={state.mapId} />
       <div className="room-card">
         <p className="room-label">房间号</p>
         <h1 className="room-code">{lobby?.code ?? '····'}</h1>
@@ -49,6 +56,24 @@ export function RoomPage() {
           {copied ? '已复制链接' : '分享 / 复制邀请链接'}
         </button>
         <p className="muted">朋友打开链接，或在「多人对战」里输入房间号就能加入。</p>
+
+        {session.isHost && !playing ? (
+          <div className="map-pick-grid" role="group" aria-label="决斗场">
+            {MAP_IDS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                className={`map-card map-card-${id} ${state.mapId === id ? 'is-on' : ''}`}
+                onClick={() => pickMap(id)}
+              >
+                <strong>{MAPS[id].name}</strong>
+                <span>{id === 'volcano' ? '侧后方火山锥与熔岩河' : '棒棒糖与棉花糖浮岛'}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="muted">决斗场由房主选择，开局后同步到所有人</p>
+        )}
 
         <ul className="room-seats">
           {seats.map((p, i) => (
@@ -65,7 +90,9 @@ export function RoomPage() {
         {playing ? (
           <p className="room-wait">本局正在进行中…</p>
         ) : session.isHost ? (
-          <button className="btn btn-yellow btn-big" onClick={() => session.startMatch()}>开始游戏（{players.length} 人）</button>
+          <button className="btn btn-yellow btn-big" onClick={() => session.startMatch(state.mapId)}>
+            开始游戏（{players.length} 人）
+          </button>
         ) : (
           <p className="room-wait">等待房主开始游戏…</p>
         )}

@@ -1,31 +1,31 @@
-/** 大厅里的各个弹窗。未接入的功能会明确写出“尚未接入”。 */
+/** 大厅弹窗：联机、战绩、每日奖励、教程、设置、商城。 */
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { GAME } from '../game/config';
 import { RARITY_LABEL } from '../data/skins';
 import { isBgmMuted, isMuted, setBgmMuted, setMuted, unlockAudio } from '../game/audio';
 import { auth } from '../state/auth';
 import { fetchCloudHistory } from '../state/cloudHistory';
+import {
+  canClaimDaily, claimDaily, exchangeGem, loadProgress, progressVersion, subscribeProgress,
+} from '../state/progress';
 import { loadHistory, type HistoryEntry } from '../state/storage';
 import { AuthPanel } from './AuthPanel';
 import { Modal } from './Modal';
 import { MultiModal } from './MultiModal';
 
-export type LobbyModal = 'multi' | 'rank' | 'daily' | 'tutorial' | 'settings' | 'shop' | null;
+export type LobbyModal = 'multi' | 'rank' | 'daily' | 'tutorial' | 'items' | 'settings' | 'shop' | null;
 
 const MODE_LABEL = { practice: '练习', match: '对战', online: '联机' } as const;
+const ITEM_GUIDE_URL = `${import.meta.env.BASE_URL}images/item-guide.jpg`;
 
 export function LobbyModals({ which, onClose, roomCode }: { which: LobbyModal; onClose(): void; roomCode?: string }) {
   if (which === 'multi') return <MultiModal onClose={onClose} initialCode={roomCode} />;
   if (which === 'rank') return <RankModal onClose={onClose} />;
   if (which === 'daily') return <DailyModal onClose={onClose} />;
   if (which === 'tutorial') return <TutorialModal onClose={onClose} />;
+  if (which === 'items') return <ItemsGuideModal onClose={onClose} />;
   if (which === 'settings') return <SettingsModal onClose={onClose} />;
-  if (which === 'shop') {
-    return (
-      <Modal title="商城" onClose={onClose}>
-        <p className="pending-note">宝石 / 金币商城尚未接入，也没有任何支付功能。当前所有皮肤都可以免费试用。</p>
-      </Modal>
-    );
-  }
+  if (which === 'shop') return <ShopModal onClose={onClose} />;
   return null;
 }
 
@@ -124,30 +124,71 @@ function RankModal({ onClose }: { onClose(): void }) {
 }
 
 function DailyModal({ onClose }: { onClose(): void }) {
+  useSyncExternalStore(subscribeProgress, progressVersion, progressVersion);
+  const ready = canClaimDaily();
+  const e = GAME.economy;
+  const [msg, setMsg] = useState('');
   return (
     <Modal title="每日奖励" onClose={onClose}>
       <div className="daily-grid">
-        {[1, 2, 3, 4, 5, 6, 7].map((d) => (
-          <div key={d} className="daily-cell">
-            <span>第{d}天</span>
-            <b>{d === 7 ? '🎁' : '🪙'}</b>
-          </div>
-        ))}
+        <div className="daily-cell">
+          <span>今日</span>
+          <b>🪙{e.dailyCoins}</b>
+        </div>
+        <div className="daily-cell">
+          <span>额外</span>
+          <b>💎{e.dailyGems}</b>
+        </div>
       </div>
-      <p className="pending-note">签到和奖励发放尚未接入，以上只是样式预览，领取不会获得任何物品。</p>
-      <button className="btn btn-yellow" disabled>领取（待接入）</button>
+      <p className="muted">每天可领取一次（按本机日期）。已领：{loadProgress().lastDaily || '从未'}</p>
+      {msg && <p className="pending-note">{msg}</p>}
+      <button
+        className="btn btn-yellow"
+        disabled={!ready}
+        onClick={() => {
+          const p = claimDaily();
+          setMsg(p ? `已领取 +${e.dailyCoins} 金币、+${e.dailyGems} 宝石` : '今天已经领过了');
+        }}
+      >
+        {ready ? '领取今日奖励' : '今日已领取'}
+      </button>
+    </Modal>
+  );
+}
+
+function ShopModal({ onClose }: { onClose(): void }) {
+  useSyncExternalStore(subscribeProgress, progressVersion, progressVersion);
+  const p = loadProgress();
+  const cost = GAME.economy.gemCostCoins;
+  const [msg, setMsg] = useState('');
+  return (
+    <Modal title="商城" onClose={onClose}>
+      <p className="muted">当前：{p.coins} 金币 · {p.gems} 宝石</p>
+      <p className="pending-note">皮肤仍可全部免费试用。暂无真实支付；可用金币兑换宝石。</p>
+      <button
+        className="btn btn-blue"
+        disabled={p.coins < cost}
+        onClick={() => {
+          const next = exchangeGem();
+          setMsg(next ? `兑换成功：-${cost} 金币，+1 宝石` : '金币不足');
+        }}
+      >
+        {cost} 金币 → 1 宝石
+      </button>
+      {msg && <p className="muted">{msg}</p>}
     </Modal>
   );
 }
 
 function TutorialModal({ onClose }: { onClose(): void }) {
   const steps = [
-    { t: '移动', d: '手机：拖动左下角摇杆。电脑：WASD 或方向键。' },
-    { t: '冲撞', d: '按住右下角拳头（电脑：空格）蓄力，松手朝面向的方向冲出去。蓄力时移动变慢。' },
-    { t: '变大', d: '吃掉平台上的果冻块升级，最高 3 级。越大越重，越难被撞飞。' },
-    { t: '变小', d: '被重重撞到会降一级，并掉出一块果冻。' },
-    { t: '缩圈', d: '15 秒后平台每 8 秒缩小一次，红圈外的地砖会掉下去。' },
-    { t: '胜负', d: '掉出平台就淘汰。60 秒结束或只剩一人时结算。' },
+    { t: '移动与冲撞', d: '摇杆移动；按住右下拳头蓄力，松手冲刺。' },
+    { t: '变大变小', d: '吃黄块升级；被重击降级并掉块。' },
+    { t: '缩圈', d: '15 秒后每 8 秒缩小，掉出平台即淘汰。' },
+    { t: '神秘道具箱', d: '场上会掉金色道具箱，捡起随机开出火箭、护盾、跳板、地雷等。详见「道具图鉴」。' },
+    { t: '幽灵布丁', d: '淘汰后变幽灵，冷却好后按冲在摇杆方向放布丁挡路。' },
+    { t: '三局赛', d: '正式对战与联机打满 3 局累计分，并列加赛。练习只打 1 局。' },
+    { t: '成长', d: '结算得 XP / 金币 / 宝石；大厅可领每日奖励，商城可用金币换宝石。' },
   ];
   return (
     <Modal title="新手教程" onClose={onClose}>
@@ -159,7 +200,18 @@ function TutorialModal({ onClose }: { onClose(): void }) {
           </li>
         ))}
       </ol>
-      <p className="muted">皮肤稀有度：{Object.values(RARITY_LABEL).join(' / ')}（仅外观，不影响属性）</p>
+      <p className="muted">皮肤稀有度：{Object.values(RARITY_LABEL).join(' / ')}（仅外观）</p>
+    </Modal>
+  );
+}
+
+function ItemsGuideModal({ onClose }: { onClose(): void }) {
+  return (
+    <Modal title="道具图鉴" onClose={onClose}>
+      <p className="muted">场上只掉神秘道具箱；开箱后随机获得下列道具之一。</p>
+      <div className="item-guide">
+        <img src={ITEM_GUIDE_URL} alt="果冻擂台道具设计图：神秘箱与各类道具效果说明" />
+      </div>
     </Modal>
   );
 }

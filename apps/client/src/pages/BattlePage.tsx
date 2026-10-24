@@ -1,6 +1,7 @@
-/** 03 战斗页：Three.js 3D 擂台 + 摇杆 + 冲撞键 + 剩余人数 + 倒计时 + 缩圈警告。单机和联机共用。 */
+/** 03 战斗页：3D 擂台 + 摇杆 + HUD（系列赛 / 事件横幅 / 局间记分）。 */
 import { useEffect, useRef, useState } from 'react';
 import { DashButton } from '../components/DashButton';
+import { SkillButton } from '../components/SkillButton';
 import { IconTimer, IconUser } from '../components/icons';
 import { Joystick } from '../components/Joystick';
 import { ShrinkWarning } from '../components/ShrinkWarning';
@@ -19,7 +20,7 @@ function fmt(sec: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-const TITLES = { practice: '单人练习', match: '本地对战 · 电脑对手', online: '联机对战' } as const;
+const TITLES = { practice: '单人练习', match: '本地对战 · 三局赛', online: '联机对战 · 三局赛' } as const;
 
 export function BattlePage() {
   const { state, dispatch } = useApp();
@@ -46,14 +47,16 @@ export function BattlePage() {
         r.dispose();
       };
     }
-    const r = new BattleRunner({ host: host.current!, mode: state.mode, skinId: state.skinId, input, onHud: setHud, onEnd });
+    const r = new BattleRunner({
+      host: host.current!, mode: state.mode, skinId: state.skinId, mapId: state.mapId, input, onHud: setHud, onEnd,
+    });
     runner.current = r;
     return () => {
       stopBattleBgm();
       r.dispose();
       runner.current = null;
     };
-  }, [online, state.mode, state.skinId, input, dispatch]);
+  }, [online, state.mode, state.skinId, state.mapId, state.battleId, input, dispatch]);
 
   // 倒计时音效：3、2、1、开打
   const lastCount = useRef<number | null>(null);
@@ -77,6 +80,7 @@ export function BattlePage() {
   useEffect(() => {
     if (paused) {
       input.dashHeld = false;
+      input.useQueued = false;
       input.stickX = input.stickY = 0;
     }
   }, [paused, input]);
@@ -88,16 +92,21 @@ export function BattlePage() {
 
   const warn = hud?.phase === 'play' ? hud.warnLeft : null;
   const title = online && session.lobby ? `${TITLES.online} · 房间 ${session.lobby.code}` : TITLES[state.mode];
+  const roundLabel = hud?.overtime
+    ? '加赛'
+    : `第 ${hud?.round ?? 1}/${hud?.totalRounds ?? 1} 局`;
+
   return (
     <div className={`page battle-page ${warn !== null ? 'battle-danger' : ''}`}>
-      <SkyBackground dim={warn !== null} />
+      <SkyBackground dim={warn !== null} theme={state.mapId} />
       <div ref={host} className="battle-canvas" />
 
       <div className="hud-top">
         <div className="hud-left">
           <span className="hud-pill hud-title">{title}</span>
+          <span className="hud-pill">{roundLabel} · 累计 <b>{hud?.seriesScore ?? 0}</b></span>
           <span className="hud-pill"><IconUser size={22} />剩余 <b>{hud?.alive ?? '-'}</b> 人</span>
-          <span className="hud-pill hud-level">体型 Lv.{hud?.level ?? 1}</span>
+          <span className="hud-pill hud-level">体型 Lv.{hud?.level ?? 1}{hud?.item ? ` · ${hud.item}` : ''}</span>
         </div>
         <div className="hud-right">
           <span className="hud-pill hud-timer"><IconTimer />{fmt(hud?.timeLeft ?? 60)}</span>
@@ -107,24 +116,45 @@ export function BattlePage() {
 
       <ShrinkWarning secondsLeft={warn} />
 
+      {hud?.banner && <div className="event-banner">{hud.banner}</div>}
+      {hud?.alert && <div className="event-alert">{hud.alert}</div>}
+
       {hud?.phase === 'countdown' && (
         <div className="countdown" key={hud.countdown}>{hud.countdown > 0 ? hud.countdown : '开打！'}</div>
       )}
-      {hud && !hud.playerAlive && hud.phase !== 'over' && (
+
+      {hud?.phase === 'round_end' && (
+        <div className="round-board">
+          <h2>{hud.overtime ? '加赛即将开始' : `第 ${hud.round} 局结束`}</h2>
+          <ol>
+            {hud.roundRanks.slice(0, 6).map((row) => (
+              <li key={row.id} className={row.isPlayer ? 'me' : ''}>
+                <span>{row.rank}</span>
+                <b>{row.name}</b>
+                <em>+{row.gain}</em>
+                <i>总分 {row.total}</i>
+              </li>
+            ))}
+          </ol>
+          <p className="muted">请稍候…</p>
+        </div>
+      )}
+
+      {hud && !hud.playerAlive && hud.phase === 'play' && (
         <div className="out-banner">
-          <p>你掉下擂台了！正在观战…</p>
-          {online ? (
-            <p className="muted">等这一局结束后一起结算</p>
-          ) : (
-            <button className="btn btn-yellow" onClick={() => runner.current?.finishNow()}>直接结算</button>
+          <p>你变成幽灵了！瞄准方向按「冲」放布丁</p>
+          <p className="muted">{hud.ghostCd > 0 ? `冷却 ${Math.ceil(hud.ghostCd)}s` : '布丁已就绪'}</p>
+          {!online && (
+            <button className="btn btn-yellow" onClick={() => runner.current?.finishNow()}>提前结束整场</button>
           )}
         </div>
       )}
-      {hud?.phase === 'over' && <div className="countdown">对局结束</div>}
+      {hud?.phase === 'series_end' && <div className="countdown">系列赛结束</div>}
 
       <Joystick input={input} />
+      {hud?.held && hud.playerAlive && hud.phase === 'play' && <SkillButton input={input} name={hud.held} />}
       <DashButton input={input} charge={hud?.charge ?? 0} />
-      <p className="key-hint">电脑：WASD / 方向键移动，空格蓄力冲撞</p>
+      <p className="key-hint">电脑：WASD 移动，空格蓄力，E 释放道具 / 幽灵放布丁</p>
 
       {paused && (
         <div className="modal-mask">
@@ -138,7 +168,7 @@ export function BattlePage() {
             {online ? (
               <button className="btn btn-gray" onClick={leaveRoom}>离开房间（你的果冻交给电脑）</button>
             ) : (
-              <button className="btn btn-gray" onClick={() => dispatch({ type: 'goLobby' })}>放弃本局，返回大厅</button>
+              <button className="btn btn-gray" onClick={() => dispatch({ type: 'goLobby' })}>放弃本场，返回大厅</button>
             )}
           </div>
         </div>

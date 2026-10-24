@@ -1,4 +1,4 @@
-/** 06 结算页：前三名领奖台、本局淘汰数和得分（全部来自实际对局结果）。 */
+/** 06 结算页：系列赛名次、奖励，以及音效收尾。 */
 import { useEffect, useMemo } from 'react';
 import { JellyStageView } from '../components/JellyStageView';
 import { SkyBackground } from '../components/SkyBackground';
@@ -45,10 +45,15 @@ export function ResultPage() {
     await session.leave();
     dispatch({ type: 'goLobby' });
   };
+  const rw = r.rewards ?? { xp: 0, coins: 0, gems: 0 };
   return (
     <div className="page result-page">
       <SkyBackground />
-      <span className="tag-title result-tag">{won ? '胜利结算' : '对局结算'}{r.mode === 'practice' ? ' · 练习' : r.mode === 'online' ? ' · 联机' : ''}</span>
+      <span className="tag-title result-tag">
+        {won ? '胜利结算' : '对局结算'}
+        {r.mode === 'practice' ? ' · 练习' : r.mode === 'online' ? ' · 联机' : ' · 三局赛'}
+        {r.roundsPlayed ? ` · ${r.roundsPlayed} 局` : ''}
+      </span>
       <div className="result-main">
         <div className="result-left">
           <h1 className={`rank-title ${won ? 'rank-win' : ''}`}>第{CN_RANK[me.rank - 1] ?? me.rank}名</h1>
@@ -65,10 +70,15 @@ export function ResultPage() {
             <dt>名次</dt><dd>{me.rank} / {ranking.length}</dd>
             <dt>淘汰数</dt><dd>{me.kos}</dd>
             <dt>吃掉果冻</dt><dd>{me.eaten}</dd>
-            <dt>存活时间</dt><dd>{Math.round(me.survived)} 秒</dd>
-            <dt>得分</dt><dd className="score">{me.score}</dd>
+            <dt>累计分</dt><dd className="score">{me.score}</dd>
           </dl>
-          <p className="reward-note">奖励：宝石 / 金币系统尚未接入，本局不发放奖励。</p>
+          <p className="reward-note">
+            本场奖励：+{rw.xp} XP · +{rw.coins} 金币
+            {rw.gems > 0 ? ` · +${rw.gems} 宝石` : ''}
+          </p>
+          {r.titles?.length > 0 && (
+            <p className="titles-line">{r.titles.slice(0, 4).join('　')}</p>
+          )}
           <ol className="mini-rank">
             {ranking.map((e) => (
               <li key={e.id} className={e.isPlayer ? 'me' : ''}>
@@ -86,13 +96,13 @@ export function ResultPage() {
           </>
         ) : (
           <>
-            <button className="btn btn-blue" onClick={() => dispatch({ type: 'replay' })}>再玩一局</button>
+            <button className="btn btn-blue" onClick={() => dispatch({ type: 'replay' })}>再来一场</button>
             <button className="btn btn-yellow btn-big" onClick={() => dispatch({ type: 'goLobby' })}>返回大厅</button>
           </>
         )}
       </div>
-      {online && <p className="muted">房主再次开局时，会自动进入下一局。</p>}
-      <p className="muted result-rule">得分规则：第 1/2/3 名得 4/2/1 分，每次把别人撞下台 +1 分。</p>
+      {online && <p className="muted">房主再次开局时，会自动进入下一场三局赛。</p>}
+      <p className="muted result-rule">每局名次分 4/2/1/0，最后一击 +1；打满 3 局累计，并列加赛。</p>
     </div>
   );
 }

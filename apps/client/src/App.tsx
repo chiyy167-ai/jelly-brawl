@@ -35,7 +35,7 @@ function Pages() {
 function NetBridge() {
   const { dispatch } = useApp();
   useEffect(() => {
-    session.onStart = () => dispatch({ type: 'netStart' });
+    session.onStart = (msg) => dispatch({ type: 'netStart', mapId: msg.mapId });
     session.onKicked = (msg) => dispatch({ type: 'goLobby', notice: msg });
     return () => {
       session.onStart = null;

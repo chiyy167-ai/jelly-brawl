@@ -1,18 +1,20 @@
 /** 02 游戏大厅：开始游戏、单人练习、多人入口、皮肤、排行榜、每日奖励、新手教程。 */
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { IconBook, IconCoin, IconCrown, IconGear, IconGem, IconGift, IconPlay, IconShirt, IconUser, IconUsers } from '../components/icons';
 import { JellyStageView } from '../components/JellyStageView';
 import { LobbyModals, type LobbyModal } from '../components/LobbyModals';
 import { Logo } from '../components/Logo';
+import { MapPickModal, type MapPickNext } from '../components/MapPickModal';
 import { SkyBackground } from '../components/SkyBackground';
 import { getSkin } from '../data/skins';
 import { renderThumbnails } from '../game/stage';
+import type { MapId } from '../game/types';
 import { CODE_LENGTH } from '../net/protocol';
 import { useApp } from '../state/AppState';
+import { loadProgress, progressVersion, subscribeProgress, xpBar } from '../state/progress';
 
 const VIEW = { y: 3.4, z: 12, lookY: 0.6, fov: 35, floor: 5.4 };
 
-/** 分享链接里的 ?room=房间号，只用一次 */
 function takeRoomParam(): string {
   const url = new URL(location.href);
   const code = (url.searchParams.get('room') ?? '').toUpperCase().slice(0, CODE_LENGTH);
@@ -27,9 +29,12 @@ export function LobbyPage() {
   const { state, dispatch } = useApp();
   const [roomCode] = useState(takeRoomParam);
   const [modal, setModal] = useState<LobbyModal>(roomCode ? 'multi' : null);
+  const [mapNext, setMapNext] = useState<MapPickNext | null>(null);
+  useSyncExternalStore(subscribeProgress, progressVersion, progressVersion);
+  const prog = loadProgress();
+  const bar = xpBar();
   const skin = getSkin(state.skinId);
   const avatar = useMemo(() => renderThumbnails([state.skinId])[state.skinId], [state.skinId]);
-  // 玩家选中的皮肤站中间，旁边是几只装饰果冻
   const items = useMemo(() => {
     const others = ['blue', 'cool', 'wizard'].filter((id) => id !== state.skinId);
     return [
@@ -40,9 +45,18 @@ export function LobbyPage() {
     ];
   }, [state.skinId]);
 
+  const afterMap = (mapId: MapId) => {
+    dispatch({ type: 'setMap', mapId });
+    const next = mapNext;
+    setMapNext(null);
+    if (next === 'multi') setModal('multi');
+    else if (next === 'practice') dispatch({ type: 'startBattle', mode: 'practice' });
+    else if (next === 'match') dispatch({ type: 'startBattle', mode: 'match' });
+  };
+
   return (
     <div className="page lobby-page">
-      <SkyBackground />
+      <SkyBackground theme={mapNext ? state.mapId : 'candy'} />
       <JellyStageView className="lobby-stage" items={items} view={VIEW} />
 
       <header className="lobby-top">
@@ -51,15 +65,22 @@ export function LobbyPage() {
           <button className="profile-card" onClick={() => dispatch({ type: 'openSkins' })} aria-label="当前角色，点击换皮肤">
             <img src={avatar} alt="" />
             <div>
-              <b>Lv.1</b>
+              <b>Lv.{bar.level}</b>
               <small>{skin.name}</small>
-              <div className="xp-bar"><i style={{ width: '0%' }} /><span>0/100</span></div>
+              <div className="xp-bar">
+                <i style={{ width: `${bar.pct}%` }} />
+                <span>{bar.xp}/{bar.need}</span>
+              </div>
             </div>
           </button>
         </div>
         <div className="currency-row">
-          <button className="currency" onClick={() => setModal('shop')}><IconGem /><span>0</span><em>+</em></button>
-          <button className="currency" onClick={() => setModal('shop')}><IconCoin /><span>0</span><em>+</em></button>
+          <button className="currency" onClick={() => setModal('shop')} aria-label={`宝石 ${prog.gems}`}>
+            <IconGem /><span>{prog.gems}</span><em>+</em>
+          </button>
+          <button className="currency" onClick={() => setModal('shop')} aria-label={`金币 ${prog.coins}`}>
+            <IconCoin /><span>{prog.coins}</span><em>+</em>
+          </button>
           <button className="round-btn" onClick={() => setModal('settings')} aria-label="设置"><IconGear /></button>
         </div>
       </header>
@@ -70,24 +91,27 @@ export function LobbyPage() {
           <span>每日奖励</span>
         </button>
         <button className="side-btn" onClick={() => setModal('tutorial')}>
-          <i className="badge-new">New</i>
           <IconBook size={40} />
           <span>新手教程</span>
+        </button>
+        <button className="side-btn" onClick={() => setModal('items')}>
+          <IconGift size={40} />
+          <span>道具图鉴</span>
         </button>
       </aside>
 
       <footer className="lobby-bottom">
         <div className="lobby-group">
-          <button className="tile-btn" onClick={() => dispatch({ type: 'startBattle', mode: 'practice' })}>
+          <button className="tile-btn" onClick={() => setMapNext('practice')}>
             <IconUser />
             <span>单人模式</span>
           </button>
-          <button className="tile-btn" onClick={() => setModal('multi')}>
+          <button className="tile-btn" onClick={() => setMapNext('multi')}>
             <IconUsers />
             <span>多人对战</span>
           </button>
         </div>
-        <button className="start-btn" onClick={() => dispatch({ type: 'startBattle', mode: 'match' })}>
+        <button className="start-btn" onClick={() => setMapNext('match')}>
           <IconPlay />
           <span>开始游戏</span>
         </button>
@@ -110,6 +134,9 @@ export function LobbyPage() {
         </div>
       )}
 
+      {mapNext && (
+        <MapPickModal next={mapNext} onClose={() => setMapNext(null)} onPicked={afterMap} />
+      )}
       <LobbyModals which={modal} onClose={() => setModal(null)} roomCode={roomCode} />
     </div>
   );
