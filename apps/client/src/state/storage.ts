@@ -33,6 +33,8 @@ export function saveSkin(id: string): void {
 }
 
 const NAME_KEY = 'jelly-brawl.name';
+let nameVersion = 0;
+const nameListeners = new Set<() => void>();
 
 /** 联机昵称；第一次随机一个 */
 export function loadName(): string {
@@ -51,6 +53,17 @@ export function saveName(name: string): void {
   } catch {
     // 忽略
   }
+  nameVersion += 1;
+  nameListeners.forEach((fn) => fn());
+}
+
+export function subscribeName(fn: () => void): () => void {
+  nameListeners.add(fn);
+  return () => nameListeners.delete(fn);
+}
+
+export function nameStoreVersion(): number {
+  return nameVersion;
 }
 
 const LOADED_KEY = 'jelly-brawl.loaded';

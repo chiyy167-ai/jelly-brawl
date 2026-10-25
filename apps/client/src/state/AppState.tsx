@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useReducer, type Dispatch, type
 import type { GameMode, MapId, MatchResult } from '../game/types';
 import { pushMatchResult } from './cloudHistory';
 import { applyMatchRewards } from './progress';
+import { pushLevelToCloud } from './profile';
 import { addHistory, loadSkin, saveSkin } from './storage';
 
 export type Page = 'loading' | 'lobby' | 'battle' | 'skins' | 'result' | 'room';
@@ -88,6 +89,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       applyMatchRewards(action.result);
       addHistory(action.result);
       void pushMatchResult(action.result);
+      void pushLevelToCloud();
     }
     rawDispatch(action);
   }, []);

@@ -12,6 +12,7 @@ import { SkinPage } from './pages/SkinPage';
 import { auth } from './state/auth';
 import { AppProvider, useApp } from './state/AppState';
 import { syncHistoryAfterLogin } from './state/cloudHistory';
+import { syncProfileAfterLogin } from './state/profile';
 
 function Pages() {
   const { state } = useApp();
@@ -45,7 +46,7 @@ function NetBridge() {
   return null;
 }
 
-/** 登录成功后把本机战绩补传到云端（邮箱验证跳转回来时也会触发） */
+/** 登录成功后同步战绩与昵称（邮箱验证 / Google 回调回来时也会触发） */
 function AuthBridge() {
   useEffect(() => {
     let last = '';
@@ -54,6 +55,7 @@ function AuthBridge() {
       if (id && id !== last) {
         last = id;
         void syncHistoryAfterLogin();
+        void syncProfileAfterLogin();
       }
       if (!id) last = '';
     });

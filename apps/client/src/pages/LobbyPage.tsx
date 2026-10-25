@@ -12,7 +12,9 @@ import type { MapId } from '../game/types';
 import { onlineNow, subscribeOnline } from '../net/onlineCount';
 import { CODE_LENGTH } from '../net/protocol';
 import { useApp } from '../state/AppState';
+import { auth } from '../state/auth';
 import { loadProgress, progressVersion, subscribeProgress, xpBar } from '../state/progress';
+import { loadName, nameStoreVersion, subscribeName } from '../state/storage';
 
 const VIEW = { y: 3.4, z: 12, lookY: 0.6, fov: 35, floor: 5.4 };
 
@@ -32,10 +34,13 @@ export function LobbyPage() {
   const [modal, setModal] = useState<LobbyModal>(roomCode ? 'multi' : null);
   const [mapNext, setMapNext] = useState<MapPickNext | null>(null);
   useSyncExternalStore(subscribeProgress, progressVersion, progressVersion);
+  useSyncExternalStore(auth.subscribe, auth.getVersion);
+  useSyncExternalStore(subscribeName, nameStoreVersion);
   const onlineN = useSyncExternalStore(subscribeOnline, onlineNow, () => null);
   const prog = loadProgress();
   const bar = xpBar();
   const skin = getSkin(state.skinId);
+  const displayName = loadName();
   const avatar = useMemo(() => renderThumbnails([state.skinId])[state.skinId], [state.skinId]);
   const items = useMemo(() => {
     const others = ['blue', 'cool', 'wizard'].filter((id) => id !== state.skinId);
@@ -67,8 +72,8 @@ export function LobbyPage() {
           <button className="profile-card" onClick={() => dispatch({ type: 'openSkins' })} aria-label="当前角色，点击换皮肤">
             <img src={avatar} alt="" />
             <div>
-              <b>Lv.{bar.level}</b>
-              <small>{skin.name}</small>
+              <b>{displayName}</b>
+              <small>Lv.{bar.level} · {skin.name}</small>
               <div className="xp-bar">
                 <i style={{ width: `${bar.pct}%` }} />
                 <span>{bar.xp}/{bar.need}</span>
