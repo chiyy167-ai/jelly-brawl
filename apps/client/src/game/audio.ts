@@ -15,8 +15,21 @@ let bus: GainNode | null = null;
 let muted = false;
 let bgmMuted = false;
 let bgmTimer = 0;
-let bgmStep = 0;
+let bgmOn = false;
+let bgmNext = 0;
+let bgmKick = 0;
+const musicNodes: OscillatorNode[] = [];
 let unlocked = false;
+
+const BEAT = 0.36;
+/** 8 拍循环：拍点、MIDI。大调小旋律，不使用现成曲子。 */
+const MELODY: Array<[number, number]> = [
+  [0, 76], [0.5, 79], [1, 81], [1.5, 79],
+  [2, 76], [2.5, 74], [3, 72], [3.5, 74],
+  [4, 76], [4.5, 79], [5, 84], [5.5, 81],
+  [6, 79], [6.5, 76], [7, 74], [7.5, 72],
+];
+const BASS = [48, 45, 53, 43];
 
 try {
   muted = localStorage.getItem(MUTE_KEY) === '1';
@@ -50,10 +63,10 @@ function output(): AudioNode {
 }
 
 export function unlockAudio(): void {
-  if (unlocked) return;
-  unlocked = true;
   const audio = ac();
   if (audio.state === 'suspended') void audio.resume();
+  if (unlocked) return;
+  unlocked = true;
   // 极短静音，唤醒部分 WebView
   tone(40, 0.01, 'sine', 0.0001);
 }
@@ -73,7 +86,6 @@ export function setMuted(v: boolean): void {
   } catch {
     // 忽略
   }
-  if (v) stopBattleBgm();
 }
 
 export function setBgmMuted(v: boolean): void {
@@ -83,7 +95,8 @@ export function setBgmMuted(v: boolean): void {
   } catch {
     // 忽略
   }
-  if (v) stopBattleBgm();
+  if (v) stopBgm();
+  else startBgm();
 }
 
 function tone(freq: number, dur: number, type: OscillatorType, gain: number, slide?: number): void {
@@ -135,27 +148,84 @@ export function playFx(e: FxEvent): void {
   else if (e.type === 'item') sfx.item();
 }
 
-/** 对战 BGM：轻快琶音循环，不抢音效 */
-export function startBattleBgm(): void {
-  stopBattleBgm();
-  if (muted || bgmMuted) return;
+/** 对战 / 大厅 BGM：已在播就不重开，避免旋律被打断 */
+export function startBgm(): void {
+  if (bgmMuted) return;
+  if (bgmOn && bgmTimer) return;
   unlockAudio();
-  const notes = [262, 330, 392, 523, 392, 330, 294, 349];
-  bgmStep = 0;
-  const beat = () => {
-    if (muted || bgmMuted || !ctx) return;
-    const n = notes[bgmStep % notes.length];
-    tone(n, 0.22, 'triangle', 0.035);
-    tone(n / 2, 0.28, 'sine', 0.02);
-    bgmStep += 1;
-    bgmTimer = window.setTimeout(beat, 280);
+  bgmOn = true;
+  const audio = ac();
+  const kick = ++bgmKick;
+  const run = () => {
+    if (kick !== bgmKick || !bgmOn || !ctx || bgmTimer) return;
+    if (bgmNext < ctx.currentTime) bgmNext = ctx.currentTime + 0.06;
+    pumpBgm();
   };
-  beat();
+  if (audio.state === 'running') run();
+  else void audio.resume().then(run);
 }
 
-export function stopBattleBgm(): void {
+export function stopBgm(): void {
+  bgmOn = false;
+  bgmKick += 1;
   if (bgmTimer) {
     clearTimeout(bgmTimer);
     bgmTimer = 0;
   }
+  // 已经排进时间线的音符也马上停，否则关掉后还会响一两秒
+  for (const osc of musicNodes) {
+    try { osc.stop(); } catch { /* 已经结束 */ }
+  }
+  musicNodes.length = 0;
+}
+
+export function startBattleBgm(): void {
+  startBgm();
+}
+
+export function stopBattleBgm(): void {
+  stopBgm();
+}
+
+function midiHz(n: number): number {
+  return 440 * 2 ** ((n - 69) / 12);
+}
+
+/** 背景音乐不跟音效静音走 */
+function musicNote(freq: number, when: number, dur: number, type: OscillatorType, gain: number): void {
+  if (!ctx || bgmMuted) return;
+  const osc = ctx.createOscillator();
+  const amp = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, when);
+  amp.gain.setValueAtTime(0.0001, when);
+  amp.gain.exponentialRampToValueAtTime(gain, when + 0.03);
+  amp.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  osc.connect(amp).connect(output());
+  osc.start(when);
+  osc.stop(when + dur + 0.02);
+  musicNodes.push(osc);
+  osc.onended = () => {
+    const i = musicNodes.indexOf(osc);
+    if (i >= 0) musicNodes.splice(i, 1);
+  };
+}
+
+function pumpBgm(): void {
+  if (!bgmOn || bgmMuted || !ctx) return;
+  const horizon = ctx.currentTime + 1.4;
+  const loop = BEAT * 8;
+  while (bgmNext < horizon) {
+    for (const [step, note] of MELODY) {
+      musicNote(midiHz(note), bgmNext + step * BEAT, BEAT * 0.9, 'triangle', 0.036);
+    }
+    BASS.forEach((note, i) => {
+      const at = bgmNext + i * 2 * BEAT;
+      musicNote(midiHz(note), at, BEAT * 1.9, 'sine', 0.028);
+      musicNote(midiHz(note + 12), at, BEAT * 1.7, 'sine', 0.012);
+    });
+    bgmNext += loop;
+  }
+  if (bgmTimer) clearTimeout(bgmTimer);
+  bgmTimer = window.setTimeout(pumpBgm, 500);
 }

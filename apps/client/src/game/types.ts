@@ -38,6 +38,8 @@ export interface Jelly {
   hurtCd: number;
   dizzy: number;
   alive: boolean;
+  /** 已掉落并回到台上的幽灵，不再重复坠落 */
+  ghosting: boolean;
   elimTime: number;
   fallY: number;
   fallVy: number;

@@ -1,5 +1,5 @@
 /** 02 游戏大厅：开始游戏、单人练习、多人入口、皮肤、排行榜、每日奖励、新手教程。 */
-import { useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { IconBook, IconCodex, IconCoin, IconCrown, IconGear, IconGem, IconGift, IconPlay, IconShirt, IconUser, IconUsers } from '../components/icons';
 import { JellyStageView } from '../components/JellyStageView';
 import { LobbyModals, type LobbyModal } from '../components/LobbyModals';
@@ -7,6 +7,7 @@ import { Logo } from '../components/Logo';
 import { MapPickModal, type MapPickNext } from '../components/MapPickModal';
 import { SkyBackground } from '../components/SkyBackground';
 import { getSkin } from '../data/skins';
+import { startBgm } from '../game/audio';
 import { renderThumbnails } from '../game/stage';
 import type { MapId } from '../game/types';
 import { onlineNow, subscribeOnline } from '../net/onlineCount';
@@ -31,6 +32,7 @@ function takeRoomParam(): string {
 export function LobbyPage() {
   const { state, dispatch } = useApp();
   const [roomCode] = useState(takeRoomParam);
+  useEffect(() => { startBgm(); }, []);
   const [modal, setModal] = useState<LobbyModal>(roomCode ? 'multi' : null);
   const [mapNext, setMapNext] = useState<MapPickNext | null>(null);
   useSyncExternalStore(subscribeProgress, progressVersion, progressVersion);

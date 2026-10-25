@@ -6,7 +6,7 @@ import { computeRewards } from './economy';
 import { scheduleEvents, tickEvents } from './events';
 import { collidePuddings, tickGhost } from './ghost';
 import { seedItems, swapHeld, tickItems, useHeldItem } from './items';
-import { applyLevel, collideAll, eatBlobs, eliminate, fallDown, integrate, steer } from './physics';
+import { applyLevel, collideAll, eatBlobs, eliminate, integrate, settleGhost, steer } from './physics';
 import { makeRng } from './rng';
 import { awardRound, blankSeries } from './series';
 import type {
@@ -26,7 +26,7 @@ function makeJelly(id: number, name: string, skinId: string, isPlayer: boolean, 
     vx: 0, vy: 0, facing: angle + Math.PI, level: 1,
     radius: 0, mass: 0, speed: 0, impact: 0, resist: 0,
     charge: 0, charging: false, cool: 0, dashT: 0, hurtCd: 0, dizzy: 0,
-    alive: true, elimTime: 0, fallY: 0, fallVy: 0,
+    alive: true, ghosting: false, elimTime: 0, fallY: 0, fallVy: 0,
     lastHitBy: -1, lastHitTime: -99, kos: 0, eaten: 0,
     hits: 0, selfOut: 0, puddings: 0,
     item: null, itemB: null, shield: 0, magnet: 0, rocket: 0, star: 0, freezeT: 0, airT: 0,
@@ -110,6 +110,7 @@ function resetRoundFields(s: MatchState, seed: number): void {
     j.hurtCd = 0;
     j.dizzy = 0;
     j.alive = true;
+    j.ghosting = false;
     j.elimTime = 0;
     j.fallY = 0;
     j.fallVy = 0;
@@ -222,18 +223,7 @@ export function stepMatch(s: MatchState, inputs: Record<number, InputCmd>, dt: n
 
   if (s.phase === 'series_end') return;
 
-  for (const j of s.jellies) {
-    if (j.alive) continue;
-    if (j.fallY > -8) fallDown(j, dt);
-    else {
-      // 掉落后拉回台上当幽灵，才能放布丁
-      j.fallY = 0;
-      j.fallVy = 0;
-      j.x *= 0.35;
-      j.y *= 0.35;
-      j.vx = j.vy = 0;
-    }
-  }
+  for (const j of s.jellies) settleGhost(j, s.platformRadius, dt);
 
   if (s.hitStop > 0) {
     s.hitStop -= dt;

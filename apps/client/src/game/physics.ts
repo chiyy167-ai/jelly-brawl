@@ -244,3 +244,24 @@ export function fallDown(j: Jelly, dt: number): void {
   j.x += j.vx * dt * 0.5;
   j.y += j.vy * dt * 0.5;
 }
+
+/** 淘汰后先坠落，再只回到台上一次当幽灵，避免在中央反复冒出来 */
+export function settleGhost(j: Jelly, platformRadius: number, dt: number): void {
+  if (j.alive || j.ghosting) return;
+  if (j.fallY > -8) {
+    fallDown(j, dt);
+    return;
+  }
+  j.ghosting = true;
+  j.fallY = 0;
+  j.fallVy = 0;
+  const limit = Math.max(1.5, platformRadius * 0.62);
+  const dist = Math.hypot(j.x, j.y);
+  if (dist > limit) {
+    j.x *= limit / dist;
+    j.y *= limit / dist;
+  }
+  j.prevX = j.x;
+  j.prevY = j.y;
+  j.vx = j.vy = 0;
+}

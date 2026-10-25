@@ -1,7 +1,7 @@
 /** 根组件：只负责按当前页面状态切换页面，外加全局的横屏提示和联机事件。 */
 import { useEffect } from 'react';
 import { RotateHint } from './components/RotateHint';
-import { unlockAudio } from './game/audio';
+import { startBgm, unlockAudio } from './game/audio';
 import { session } from './net/session';
 import { BattlePage } from './pages/BattlePage';
 import { LoadingPage } from './pages/LoadingPage';
@@ -68,6 +68,7 @@ function AudioUnlock() {
   useEffect(() => {
     const once = () => {
       unlockAudio();
+      startBgm();
       window.removeEventListener('pointerdown', once);
       window.removeEventListener('keydown', once);
     };

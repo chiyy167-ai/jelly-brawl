@@ -6,7 +6,7 @@ import { IconTimer, IconUser } from '../components/icons';
 import { Joystick } from '../components/Joystick';
 import { ShrinkWarning } from '../components/ShrinkWarning';
 import { SkyBackground } from '../components/SkyBackground';
-import { sfx, startBattleBgm, stopBattleBgm, unlockAudio } from '../game/audio';
+import { isBgmMuted, setBgmMuted, sfx, startBattleBgm, stopBattleBgm, unlockAudio } from '../game/audio';
 import { createInput, releaseKeys } from '../game/input';
 import { NetRunner } from '../game/netRunner';
 import { BattleRunner, type Hud } from '../game/runner';
@@ -30,6 +30,7 @@ export function BattlePage() {
   const [input] = useState(createInput);
   const [hud, setHud] = useState<Hud | null>(null);
   const [paused, setPaused] = useState(false);
+  const [musicOff, setMusicOff] = useState(isBgmMuted);
   const [high, setHigh] = useState(false);
   const highRef = useRef(false);
   const setCam = useRef<(v: boolean) => void>(() => undefined);
@@ -50,7 +51,6 @@ export function BattlePage() {
       setCam.current = (v) => r.setHighView(v);
       r.setHighView(highRef.current);
       return () => {
-        stopBattleBgm();
         setCam.current = () => undefined;
         r.dispose();
       };
@@ -62,7 +62,6 @@ export function BattlePage() {
     setCam.current = (v) => r.setHighView(v);
     r.setHighView(highRef.current);
     return () => {
-      stopBattleBgm();
       setCam.current = () => undefined;
       r.dispose();
       runner.current = null;
@@ -148,6 +147,11 @@ export function BattlePage() {
             setHigh(highRef.current);
             setCam.current(highRef.current);
           }}>{high ? '正常视角' : '高视角'}</button>
+          <button type="button" className="hud-pill hud-cam" onClick={() => {
+            const next = !musicOff;
+            setBgmMuted(next);
+            setMusicOff(next);
+          }}>{musicOff ? '音乐关' : '音乐开'}</button>
           <button className="hud-pill hud-pause" onClick={() => setPaused(true)} aria-label={online ? '菜单' : '暂停'}>❚❚</button>
         </div>
       </div>
