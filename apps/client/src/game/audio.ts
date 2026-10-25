@@ -7,7 +7,11 @@ import type { FxEvent } from './types';
 const MUTE_KEY = 'jelly-brawl.mute';
 const BGM_KEY = 'jelly-brawl.bgm-mute';
 
+/** 总音量。原先单音峰值约 0.08，手机外放几乎听不见。 */
+const MASTER = 5.5;
+
 let ctx: AudioContext | null = null;
+let bus: GainNode | null = null;
 let muted = false;
 let bgmMuted = false;
 let bgmTimer = 0;
@@ -24,6 +28,25 @@ try {
 function ac(): AudioContext {
   if (!ctx) ctx = new AudioContext();
   return ctx;
+}
+
+/** 放大后再轻微压缩，避免多音叠在一起破音 */
+function output(): AudioNode {
+  const audio = ac();
+  if (!bus) {
+    bus = audio.createGain();
+    bus.gain.value = MASTER;
+    const comp = audio.createDynamicsCompressor();
+    comp.threshold.value = -16;
+    comp.knee.value = 10;
+    comp.ratio.value = 3;
+    comp.attack.value = 0.004;
+    comp.release.value = 0.12;
+    bus.connect(comp);
+    comp.connect(audio.destination);
+    return bus;
+  }
+  return bus;
 }
 
 export function unlockAudio(): void {
@@ -73,7 +96,7 @@ function tone(freq: number, dur: number, type: OscillatorType, gain: number, sli
   if (slide) osc.frequency.exponentialRampToValueAtTime(Math.max(40, slide), t + dur);
   amp.gain.setValueAtTime(gain, t);
   amp.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  osc.connect(amp).connect(ctx.destination);
+  osc.connect(amp).connect(output());
   osc.start(t);
   osc.stop(t + dur + 0.02);
 }
@@ -122,8 +145,8 @@ export function startBattleBgm(): void {
   const beat = () => {
     if (muted || bgmMuted || !ctx) return;
     const n = notes[bgmStep % notes.length];
-    tone(n, 0.22, 'triangle', 0.018);
-    tone(n / 2, 0.28, 'sine', 0.012);
+    tone(n, 0.22, 'triangle', 0.035);
+    tone(n / 2, 0.28, 'sine', 0.02);
     bgmStep += 1;
     bgmTimer = window.setTimeout(beat, 280);
   };

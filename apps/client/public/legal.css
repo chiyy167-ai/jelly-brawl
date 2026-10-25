@@ -1,0 +1,17 @@
+body {
+  margin: 0;
+  background: #e7f4ff;
+  color: #243056;
+  font: 16px/1.65 "PingFang SC", "Noto Sans SC", sans-serif;
+}
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+}
+h1 { font-size: 1.6rem; line-height: 1.3; margin: 0 0 8px; }
+h2 { font-size: 1.1rem; margin: 1.4rem 0 0.4rem; }
+.date, .back { color: #5b6799; }
+a { color: #2f6fe4; font-weight: 700; }
+ul { padding-left: 1.2rem; }
+li { margin: 0.35rem 0; }

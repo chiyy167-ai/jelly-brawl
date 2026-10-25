@@ -2,7 +2,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { GAME } from '../game/config';
 import { RARITY_LABEL } from '../data/skins';
-import { isBgmMuted, isMuted, setBgmMuted, setMuted, unlockAudio } from '../game/audio';
+import { isBgmMuted, isMuted, setBgmMuted, setMuted, sfx, unlockAudio } from '../game/audio';
 import { auth } from '../state/auth';
 import { fetchCloudHistory } from '../state/cloudHistory';
 import {
@@ -32,6 +32,12 @@ export function LobbyModals({ which, onClose, roomCode }: { which: LobbyModal; o
 function SettingsModal({ onClose }: { onClose(): void }) {
   const [sfxOff, setSfxOff] = useState(isMuted);
   const [bgmOff, setBgmOff] = useState(isBgmMuted);
+  // 打开设置时响一声，方便确认音量
+  useEffect(() => {
+    if (isMuted()) return;
+    unlockAudio();
+    sfx.go();
+  }, []);
   return (
     <Modal title="设置" onClose={onClose}>
       <h3 className="auth-title">声音</h3>
@@ -66,6 +72,11 @@ function SettingsModal({ onClose }: { onClose(): void }) {
       <h3 className="auth-title">账号</h3>
       <AuthPanel />
       <hr className="auth-hr" />
+      <p className="legal-links">
+        <a href={`${import.meta.env.BASE_URL}privacy.html`}>隐私政策</a>
+        <span>·</span>
+        <a href={`${import.meta.env.BASE_URL}terms.html`}>使用条款</a>
+      </p>
       <p className="muted">版本：网页版 0.4（音效 + 对撞手感调整）</p>
     </Modal>
   );
