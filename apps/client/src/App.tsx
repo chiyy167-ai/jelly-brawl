@@ -82,6 +82,37 @@ function AudioUnlock() {
   return null;
 }
 
+/** iPhone 横屏时地址栏会改可视高度，按 visualViewport 撑满，避免页面被撑出屏幕后报错 */
+function FitScreen() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const apple = /iP(hone|ad|od)/.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (apple) root.classList.add('ios');
+    const fit = () => {
+      const vv = window.visualViewport;
+      const h = Math.round(vv?.height ?? window.innerHeight);
+      const top = Math.round(vv?.offsetTop ?? 0);
+      const next = `${h}px`;
+      const nextTop = `${top}px`;
+      if (root.style.getPropertyValue('--app-h') === next && root.style.getPropertyValue('--app-top') === nextTop) return;
+      root.style.setProperty('--app-h', next);
+      root.style.setProperty('--app-top', nextTop);
+      window.dispatchEvent(new Event('resize'));
+    };
+    fit();
+    window.visualViewport?.addEventListener('resize', fit);
+    window.visualViewport?.addEventListener('scroll', fit);
+    window.addEventListener('orientationchange', fit);
+    return () => {
+      window.visualViewport?.removeEventListener('resize', fit);
+      window.visualViewport?.removeEventListener('scroll', fit);
+      window.removeEventListener('orientationchange', fit);
+    };
+  }, []);
+  return null;
+}
+
 export default function App() {
   return (
     <AppProvider>
@@ -89,6 +120,7 @@ export default function App() {
       <NetBridge />
       <AuthBridge />
       <AudioUnlock />
+      <FitScreen />
       <RotateHint />
     </AppProvider>
   );

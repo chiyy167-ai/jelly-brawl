@@ -40,7 +40,7 @@ export function BattlePage() {
 
   useEffect(() => {
     unlockAudio();
-    startBattleBgm();
+    startBattleBgm(state.mapId);
     const onEnd = (result: MatchResult) => dispatch({ type: 'finishBattle', result });
     if (online) {
       if (!session.start) {
@@ -84,8 +84,8 @@ export function BattlePage() {
   useEffect(() => {
     if (!online) runner.current?.setPaused(paused);
     if (paused) stopBattleBgm();
-    else if (hud?.phase === 'play' || hud?.phase === 'countdown') startBattleBgm();
-  }, [paused, online, hud?.phase]);
+    else if (hud?.phase === 'play' || hud?.phase === 'countdown') startBattleBgm(state.mapId);
+  }, [paused, online, hud?.phase, state.mapId]);
 
   useEffect(() => {
     if (paused) {

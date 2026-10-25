@@ -86,7 +86,28 @@
 /* ---------- 大厅弹窗内容 ---------- */
 .room-form { display: flex; flex-direction: column; gap: 10px; }
 .room-join { display: flex; gap: 8px; }
-.room-join input { flex: 1; min-width: 0; height: 48px; padding: 0 12px; border-radius: 12px; border: 3px solid #8fd3ff; font: inherit; font-size: 18px; letter-spacing: 3px; color: #23306b; }
+.room-join input, .room-code-input { flex: 1; min-width: 0; height: 48px; padding: 0 12px; border-radius: 12px; border: 3px solid #8fd3ff; font: inherit; font-size: 18px; letter-spacing: 3px; color: #23306b; }
+.room-code-input { width: 100%; text-align: center; letter-spacing: 0.4em; font-size: 28px; font-weight: 900; }
+.multi-lead { margin: 0; color: #5b6799; font-size: 14px; line-height: 1.45; }
+.multi-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.multi-choice {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 108px; padding: 14px;
+  border-radius: 18px; text-align: left; color: #fff; border: 3px solid #fff; box-shadow: var(--shadow);
+}
+.multi-choice b { font-size: 20px; }
+.multi-choice span { font-size: 13px; font-weight: 700; line-height: 1.35; opacity: 0.95; }
+.multi-choice.create { background: linear-gradient(160deg, #ffe66b, #ff9d1c); color: #7a3b00; }
+.multi-choice.join { background: linear-gradient(160deg, #5bc8ff, #1f86f0); }
+.multi-choice:active { transform: translateY(2px); }
+.multi-back { align-self: flex-start; }
+@media (max-width: 560px) and (orientation: portrait) {
+  .multi-choices { grid-template-columns: 1fr; }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .multi-choice { min-height: 0; padding: 10px 12px; }
+  .multi-choice b { font-size: 17px; }
+  .room-code-input { height: 42px; font-size: 22px; }
+}
 .field { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: 14px; }
 .field input { height: 44px; padding: 0 12px; border-radius: 12px; border: 3px solid #8fd3ff; font: inherit; font-size: 16px; color: #23306b; }
 .net-error { margin: 0; padding: 8px 12px; border-radius: 12px; background: #ffe3e6; color: #b3122a; font-size: 14px; line-height: 1.5; }

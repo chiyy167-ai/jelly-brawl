@@ -1,6 +1,7 @@
 /** 小型展示舞台：大厅、皮肤页、结算页用它显示果冻（不是战斗场景）。 */
 import * as THREE from 'three';
 import { createJelly, type JellyObject } from './jellyModel';
+import { makeRenderer, renderIfOk } from './webgl';
 
 export interface StageItem {
   skinId: string;
@@ -87,10 +88,7 @@ export class JellyStage {
 
   constructor(private host: HTMLElement, view: StageView) {
     this.view = view;
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer = makeRenderer();
     host.appendChild(this.renderer.domElement);
     this.camera = new THREE.PerspectiveCamera(view.fov, 1, 0.1, 100);
     addLights(this.scene);
@@ -138,8 +136,8 @@ export class JellyStage {
   }
 
   resize(): void {
-    const w = this.host.clientWidth || 1;
-    const h = this.host.clientHeight || 1;
+    const w = Math.max(2, this.host.clientWidth);
+    const h = Math.max(2, this.host.clientHeight);
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     // 竖屏时往后拉一点，保证都能看到
@@ -158,7 +156,7 @@ export class JellyStage {
       obj.body.scale.set(1 + k, 1 - k, 1 + k);
       obj.body.rotation.y = (item.yaw ?? 0) + this.dragYaw + Math.sin(t * 0.8 + phase) * 0.12;
     }
-    this.renderer.render(this.scene, this.camera);
+    renderIfOk(this.renderer, this.scene, this.camera);
   };
 
   dispose(): void {
@@ -198,28 +196,31 @@ const thumbCache = new Map<string, string>();
 
 /** 给皮肤格子生成缩略图（只渲染一次，之后走缓存）。 */
 export function renderThumbnails(skinIds: string[]): Record<string, string> {
-  const todo = skinIds.filter((id) => !thumbCache.has(id));
-  if (todo.length) {
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-    renderer.setSize(256, 256, false);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    const scene = new THREE.Scene();
-    addLights(scene);
-    const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
-    cam.position.set(0, 1.0, 2.6);
-    cam.lookAt(0, 0.4, 0);
-    for (const id of todo) {
-      const obj = createJelly(id);
-      obj.body.rotation.y = -0.35;
-      scene.add(obj.root);
-      renderer.render(scene, cam);
-      thumbCache.set(id, renderer.domElement.toDataURL('image/png'));
-      scene.remove(obj.root);
-      obj.dispose();
+    const todo = skinIds.filter((id) => !thumbCache.has(id));
+    if (todo.length) {
+      try {
+        const renderer = makeRenderer({ alpha: true, preserveDrawingBuffer: true });
+        renderer.setSize(160, 160, false);
+        const scene = new THREE.Scene();
+        addLights(scene);
+        const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
+        cam.position.set(0, 1.0, 2.6);
+        cam.lookAt(0, 0.4, 0);
+        for (const id of todo) {
+          const obj = createJelly(id);
+          obj.body.rotation.y = -0.35;
+          scene.add(obj.root);
+          renderIfOk(renderer, scene, cam);
+          thumbCache.set(id, renderer.domElement.toDataURL('image/png'));
+          scene.remove(obj.root);
+          obj.dispose();
+        }
+        renderer.dispose();
+        renderer.forceContextLoss();
+      } catch {
+        // iOS 横屏上 toDataURL / 建上下文会抛错，头像留空，不能把整页打崩
+        todo.forEach((id) => thumbCache.set(id, ''));
+      }
     }
-    renderer.dispose();
-    renderer.forceContextLoss();
-  }
   return Object.fromEntries(skinIds.map((id) => [id, thumbCache.get(id) ?? '']));
 }

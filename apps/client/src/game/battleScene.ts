@@ -8,6 +8,7 @@ import { ItemFx } from './itemFx';
 import { createJelly, type JellyObject } from './jellyModel';
 import { MAPS } from './maps';
 import type { MatchState } from './types';
+import { isAppleTouch, makeRenderer, renderIfOk } from './webgl';
 
 const BLOB_COLORS = [0xff6fa8, 0x45b6ff, 0xffd84a, 0x6fdc6a, 0xb07cff, 0xff9f4a];
 const RED = new THREE.Color(0xff2030);
@@ -47,12 +48,7 @@ export class BattleScene {
   private portrait = false;
 
   constructor(private host: HTMLElement, s: MatchState) {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer = makeRenderer();
     host.appendChild(this.renderer.domElement);
     const theme = MAPS[s.mapId] ?? MAPS.candy;
     // 近雾略远一点，保证擂台外的火山 / 棒棒糖不被吃掉
@@ -61,7 +57,7 @@ export class BattleScene {
     this.scene.add(new THREE.HemisphereLight(theme.hemiSky, theme.hemiGround, 1.5));
     const sun = new THREE.DirectionalLight(theme.sun, 2.4);
     sun.position.set(8, 18, 10);
-    sun.castShadow = true;
+    sun.castShadow = !isAppleTouch();
     sun.shadow.mapSize.set(1024, 1024);
     const sc = sun.shadow.camera;
     sc.left = sc.bottom = -13;
@@ -113,8 +109,8 @@ export class BattleScene {
   }
 
   resize(): void {
-    const w = this.host.clientWidth || 1;
-    const h = this.host.clientHeight || 1;
+    const w = Math.max(2, this.host.clientWidth);
+    const h = Math.max(2, this.host.clientHeight);
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.portrait = this.camera.aspect < 1;
@@ -180,7 +176,7 @@ export class BattleScene {
     this.props.update(s, time, topY);
     this.updatePlayerMarks(player, time, topY);
     this.updateCamera(player, s.shake);
-    this.renderer.render(this.scene, this.camera);
+    renderIfOk(this.renderer, this.scene, this.camera);
   }
 
   private updatePlayerMarks(p: MatchState['jellies'][number], time: number, topY: number): void {

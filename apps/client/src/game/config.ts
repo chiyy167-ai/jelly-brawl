@@ -31,7 +31,14 @@ export const GAME = {
   /** 正式对战 / 联机打满局数；练习只打 1 局 */
   series: { rounds: 3, practiceRounds: 1 },
   match: { bots: 5, practiceBots: 3, spawnRadius: 6 },
-  online: { maxHumans: 4, seats: 4, snapHz: 20, inputHz: 30, resultDelay: 1.6, presenceSec: 8 },
+  online: {
+    maxHumans: 4, seats: 4, snapHz: 20, inputHz: 30, resultDelay: 1.6, presenceSec: 8,
+    /** 远端角色按这个秒数回放，吸收国内网络抖动 */
+    interpDelay: 0.1,
+    /** 本地预测和服务器差这么远才硬对齐（普通延迟下的领先量不要拉回去） */
+    predictSnap: 12,
+    predictBlend: 0.03,
+  },
   fall: { gravity: 30, hideAfter: 2 },
   tile: { radius: 1.05, height: 0.7 },
   camera: {

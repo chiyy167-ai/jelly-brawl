@@ -116,7 +116,7 @@ export function LobbyPage() {
             <IconUser />
             <span>单人模式</span>
           </button>
-          <button className="tile-btn" onClick={() => setMapNext('multi')}>
+          <button className="tile-btn" onClick={() => setModal('multi')}>
             <IconUsers />
             <span>多人对战</span>
           </button>
@@ -145,7 +145,7 @@ export function LobbyPage() {
       )}
 
       {mapNext && (
-        <MapPickModal next={mapNext} onClose={() => setMapNext(null)} onPicked={afterMap} />
+        <MapPickModal next={mapNext} onClose={() => { setMapNext(null); startBgm('lobby'); }} onPicked={afterMap} />
       )}
       <LobbyModals which={modal} onClose={() => setModal(null)} roomCode={roomCode} />
     </div>

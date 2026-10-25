@@ -2,7 +2,8 @@
  * WebAudio 合成音效 + 简易 BGM，不加载音频文件（手机流量友好）。
  * iOS / 微信需先在用户点击后 unlock。
  */
-import type { FxEvent } from './types';
+import { bgmOf, type BgmId } from './bgmTracks';
+import type { FxEvent, MapId } from './types';
 
 const MUTE_KEY = 'jelly-brawl.mute';
 const BGM_KEY = 'jelly-brawl.bgm-mute';
@@ -17,19 +18,15 @@ let bgmMuted = false;
 let bgmTimer = 0;
 let bgmOn = false;
 let bgmNext = 0;
+let bgmCursor = 0;
 let bgmKick = 0;
+let bgmMap: BgmId = 'lobby';
 const musicNodes: OscillatorNode[] = [];
 let unlocked = false;
 
-const BEAT = 0.36;
-/** 8 拍循环：拍点、MIDI。大调小旋律，不使用现成曲子。 */
-const MELODY: Array<[number, number]> = [
-  [0, 76], [0.5, 79], [1, 81], [1.5, 79],
-  [2, 76], [2.5, 74], [3, 72], [3.5, 74],
-  [4, 76], [4.5, 79], [5, 84], [5.5, 81],
-  [6, 79], [6.5, 76], [7, 74], [7.5, 72],
-];
-const BASS = [48, 45, 53, 43];
+const BEAT = 0.5;
+/** 120 BPM 的八分音符。每首 120 个八分音符 = 30 秒。 */
+const STEP = BEAT / 2;
 
 try {
   muted = localStorage.getItem(MUTE_KEY) === '1';
@@ -96,7 +93,7 @@ export function setBgmMuted(v: boolean): void {
     // 忽略
   }
   if (v) stopBgm();
-  else startBgm();
+  else startBgm(bgmMap);
 }
 
 function tone(freq: number, dur: number, type: OscillatorType, gain: number, slide?: number): void {
@@ -148,10 +145,22 @@ export function playFx(e: FxEvent): void {
   else if (e.type === 'item') sfx.item();
 }
 
-/** 对战 / 大厅 BGM：已在播就不重开，避免旋律被打断 */
-export function startBgm(): void {
+/** 首页是邀请曲。换地图才切曲，同一首不重开。 */
+export function startBgm(id: BgmId = 'lobby'): void {
+  if (id !== bgmMap) {
+    bgmMap = id;
+    bgmCursor = 0;
+    bgmNext = 0;
+    for (const osc of musicNodes) {
+      try { osc.stop(); } catch { /* 已经结束 */ }
+    }
+    musicNodes.length = 0;
+    if (bgmTimer) {
+      clearTimeout(bgmTimer);
+      bgmTimer = 0;
+    }
+  } else if (bgmOn && bgmTimer) return;
   if (bgmMuted) return;
-  if (bgmOn && bgmTimer) return;
   unlockAudio();
   bgmOn = true;
   const audio = ac();
@@ -179,8 +188,8 @@ export function stopBgm(): void {
   musicNodes.length = 0;
 }
 
-export function startBattleBgm(): void {
-  startBgm();
+export function startBattleBgm(id: MapId = 'candy'): void {
+  startBgm(id);
 }
 
 export function stopBattleBgm(): void {
@@ -192,14 +201,14 @@ function midiHz(n: number): number {
 }
 
 /** 背景音乐不跟音效静音走 */
-function musicNote(freq: number, when: number, dur: number, type: OscillatorType, gain: number): void {
+function musicNote(freq: number, when: number, dur: number, type: OscillatorType, gain: number, attack = 0.02): void {
   if (!ctx || bgmMuted) return;
   const osc = ctx.createOscillator();
   const amp = ctx.createGain();
   osc.type = type;
   osc.frequency.setValueAtTime(freq, when);
   amp.gain.setValueAtTime(0.0001, when);
-  amp.gain.exponentialRampToValueAtTime(gain, when + 0.03);
+  amp.gain.exponentialRampToValueAtTime(gain, when + Math.min(attack, dur * 0.45));
   amp.gain.exponentialRampToValueAtTime(0.0001, when + dur);
   osc.connect(amp).connect(output());
   osc.start(when);
@@ -213,19 +222,38 @@ function musicNote(freq: number, when: number, dur: number, type: OscillatorType
 
 function pumpBgm(): void {
   if (!bgmOn || bgmMuted || !ctx) return;
+  const song = bgmOf(bgmMap);
+  const hot = song.drive === 'hot';
+  const warm = song.drive === 'warm';
   const horizon = ctx.currentTime + 1.4;
-  const loop = BEAT * 8;
+  const steps = song.melody.length;
   while (bgmNext < horizon) {
-    for (const [step, note] of MELODY) {
-      musicNote(midiHz(note), bgmNext + step * BEAT, BEAT * 0.9, 'triangle', 0.036);
+    const i = bgmCursor % steps;
+    const note = song.melody[i];
+    const slot = i % 8;
+    if (note) {
+      const wave = hot ? 'sawtooth' : warm ? 'sine' : 'triangle';
+      const gain = hot ? 0.022 : warm ? 0.026 : 0.03;
+      musicNote(midiHz(note), bgmNext, warm ? STEP * 1.2 : STEP * 0.95, wave, gain, warm ? 0.04 : 0.012);
+      if (warm && slot % 4 === 0) musicNote(midiHz(note - 12), bgmNext, STEP * 2, 'triangle', 0.012, 0.05);
     }
-    BASS.forEach((note, i) => {
-      const at = bgmNext + i * 2 * BEAT;
-      musicNote(midiHz(note), at, BEAT * 1.9, 'sine', 0.028);
-      musicNote(midiHz(note + 12), at, BEAT * 1.7, 'sine', 0.012);
-    });
-    bgmNext += loop;
+    const root = song.bass[Math.floor(i / 8)] ?? song.bass[0];
+    const fifth = root + 7;
+    const onPulse = warm ? slot === 0 || slot === 4 : slot % 2 === 0;
+    if (onPulse) {
+      const pulse = slot === 0 || slot === 4 ? root : fifth;
+      musicNote(midiHz(pulse), bgmNext, STEP * 1.6, hot ? 'square' : 'sine', hot ? 0.014 : warm ? 0.016 : 0.02, 0.02);
+      musicNote(midiHz(pulse - 12), bgmNext, STEP * 1.6, 'sine', hot ? 0.02 : 0.014, 0.02);
+    }
+    if (hot && slot % 4 === 0) musicNote(46, bgmNext, 0.09, 'sine', 0.05, 0.004);
+    if (song.drive === 'soft' && slot % 4 === 0) musicNote(midiHz(96), bgmNext, 0.06, 'triangle', 0.012, 0.004);
+    if (hot && (slot === 2 || slot === 6)) {
+      musicNote(190, bgmNext, 0.06, 'square', 0.012, 0.004);
+      musicNote(320, bgmNext, 0.05, 'triangle', 0.008, 0.004);
+    }
+    bgmCursor += 1;
+    bgmNext += STEP;
   }
   if (bgmTimer) clearTimeout(bgmTimer);
-  bgmTimer = window.setTimeout(pumpBgm, 500);
+  bgmTimer = window.setTimeout(pumpBgm, 280);
 }
