@@ -106,6 +106,11 @@ export class BattleRunner {
     this.scene.setHigh(high);
   }
 
+  /** 给新手教练等只读当前对局（勿修改） */
+  peek(): MatchState {
+    return this.state;
+  }
+
   finishNow(): void {
     if (this.ended) return;
     this.ended = true;

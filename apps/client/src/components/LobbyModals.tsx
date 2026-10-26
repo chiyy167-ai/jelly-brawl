@@ -1,7 +1,6 @@
 /** 大厅弹窗：联机、战绩、每日奖励、教程、设置、商城。 */
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { GAME } from '../game/config';
-import { RARITY_LABEL } from '../data/skins';
 import { isBgmMuted, isMuted, setBgmMuted, setMuted, sfx, unlockAudio } from '../game/audio';
 import { auth } from '../state/auth';
 import { fetchCloudHistory } from '../state/cloudHistory';
@@ -15,14 +14,21 @@ import { MultiModal } from './MultiModal';
 
 export type LobbyModal = 'multi' | 'rank' | 'daily' | 'tutorial' | 'items' | 'settings' | 'shop' | null;
 
-const MODE_LABEL = { practice: '练习', match: '对战', online: '联机' } as const;
+const MODE_LABEL = { practice: '练习', match: '对战', online: '联机', tutorial: '教程' } as const;
 const ITEM_GUIDE_URL = `${import.meta.env.BASE_URL}images/item-guide.jpg`;
 
-export function LobbyModals({ which, onClose, roomCode }: { which: LobbyModal; onClose(): void; roomCode?: string }) {
+export function LobbyModals({
+  which, onClose, roomCode, onStartTutorial,
+}: {
+  which: LobbyModal;
+  onClose(): void;
+  roomCode?: string;
+  onStartTutorial?(): void;
+}) {
   if (which === 'multi') return <MultiModal onClose={onClose} initialCode={roomCode} />;
   if (which === 'rank') return <RankModal onClose={onClose} />;
   if (which === 'daily') return <DailyModal onClose={onClose} />;
-  if (which === 'tutorial') return <TutorialModal onClose={onClose} />;
+  if (which === 'tutorial') return <TutorialModal onClose={onClose} onStart={onStartTutorial} />;
   if (which === 'items') return <ItemsGuideModal onClose={onClose} />;
   if (which === 'settings') return <SettingsModal onClose={onClose} />;
   if (which === 'shop') return <ShopModal onClose={onClose} />;
@@ -191,29 +197,27 @@ function ShopModal({ onClose }: { onClose(): void }) {
   );
 }
 
-function TutorialModal({ onClose }: { onClose(): void }) {
-  const steps = [
-    { t: '移动与冲撞', d: '摇杆移动；按住右下拳头蓄力，松手冲刺。' },
-    { t: '变大变小', d: '吃黄块升级；被重击降级并掉块。' },
-    { t: '缩圈', d: '15 秒后每 8 秒缩小，掉出平台即淘汰。' },
-    { t: '神秘道具箱', d: '场上会掉金色道具箱，捡起随机开出火箭、护盾、跳板、地雷等。详见「道具图鉴」。' },
-    { t: '幽灵布丁', d: '淘汰后变幽灵，冷却好后按冲在摇杆方向放布丁挡路。' },
-    { t: '联机', d: '大厅点多人对战，选「新开房间」或「加入房间」。房主选地图后开始，最多 4 人，不够由电脑补位。' },
-    { t: '三局赛', d: '正式对战与联机打满 3 局累计分，并列加赛。练习只打 1 局。' },
-    { t: '成长', d: '结算得 XP / 金币 / 宝石；大厅可领每日奖励，商城可用金币换宝石。' },
-    { t: '账号', d: '设置里可用 Gmail 一键登录或邮箱注册；可改游戏名字、找回密码。登录后战绩上云。' },
-  ];
+function TutorialModal({ onClose, onStart }: { onClose(): void; onStart?(): void }) {
   return (
     <Modal title="新手教程" onClose={onClose}>
+      <p className="muted">大约 1 分钟的引导对局：只有 1 个很乖的电脑靶子，没有道具和随机事件。</p>
       <ol className="tutorial">
-        {steps.map((s) => (
-          <li key={s.t}>
-            <b>{s.t}</b>
-            <span>{s.d}</span>
-          </li>
-        ))}
+        <li><b>移动</b><span>摇杆或 WASD</span></li>
+        <li><b>变大</b><span>吃掉场上的果冻块</span></li>
+        <li><b>冲撞</b><span>按住拳头蓄力，松手冲出去</span></li>
+        <li><b>缩圈</b><span>站在红圈内，别掉下去</span></li>
       </ol>
-      <p className="muted">皮肤稀有度：{Object.values(RARITY_LABEL).join(' / ')}（仅外观）</p>
+      <p className="muted">正式对战里还有神秘道具箱、幽灵布丁、三局赛等，引导里先不打扰你。</p>
+      <button
+        type="button"
+        className="btn btn-yellow btn-big"
+        onClick={() => {
+          onClose();
+          onStart?.();
+        }}
+      >
+        开始引导对局
+      </button>
     </Modal>
   );
 }

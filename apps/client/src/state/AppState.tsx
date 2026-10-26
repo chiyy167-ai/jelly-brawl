@@ -2,9 +2,9 @@
 import { createContext, useCallback, useContext, useReducer, type Dispatch, type ReactNode } from 'react';
 import type { GameMode, MapId, MatchResult } from '../game/types';
 import { pushMatchResult } from './cloudHistory';
-import { applyMatchRewards } from './progress';
+import { applyMatchRewards, grantTutorialBonus } from './progress';
 import { pushLevelToCloud } from './profile';
-import { addHistory, loadSkin, saveSkin } from './storage';
+import { addHistory, hasDoneTutorial, loadSkin, markTutorialDone, saveSkin } from './storage';
 
 export type Page = 'loading' | 'lobby' | 'battle' | 'skins' | 'result' | 'room';
 
@@ -86,7 +86,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const dispatch = useCallback<Dispatch<Action>>((action) => {
     if (action.type === 'selectSkin') saveSkin(action.skinId);
     if (action.type === 'finishBattle') {
+      const firstTutorial = action.result.mode === 'tutorial' && !hasDoneTutorial();
+      if (firstTutorial) markTutorialDone();
       applyMatchRewards(action.result);
+      if (firstTutorial) grantTutorialBonus();
       addHistory(action.result);
       void pushMatchResult(action.result);
       void pushLevelToCloud();

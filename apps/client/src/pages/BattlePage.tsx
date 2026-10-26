@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { DashButton } from '../components/DashButton';
 import { SkillButton } from '../components/SkillButton';
+import { TutorialCoach } from '../components/TutorialCoach';
 import { IconTimer, IconUser } from '../components/icons';
 import { Joystick } from '../components/Joystick';
 import { ShrinkWarning } from '../components/ShrinkWarning';
@@ -14,6 +15,7 @@ import type { MatchResult } from '../game/types';
 import { onlineNow, subscribeOnline } from '../net/onlineCount';
 import { session } from '../net/session';
 import { useApp } from '../state/AppState';
+import { markTutorialDone } from '../state/storage';
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -21,7 +23,12 @@ function fmt(sec: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-const TITLES = { practice: '单人练习', match: '本地对战 · 三局赛', online: '联机对战 · 三局赛' } as const;
+const TITLES = {
+  practice: '单人练习',
+  match: '本地对战 · 三局赛',
+  online: '联机对战 · 三局赛',
+  tutorial: '新手教程',
+} as const;
 
 export function BattlePage() {
   const { state, dispatch } = useApp();
@@ -36,7 +43,9 @@ export function BattlePage() {
   const setCam = useRef<(v: boolean) => void>(() => undefined);
   const onlineN = useSyncExternalStore(subscribeOnline, onlineNow, () => null);
   const practice = state.mode === 'practice';
+  const tutorial = state.mode === 'tutorial';
   const online = state.mode === 'online';
+  const casual = practice || tutorial;
 
   useEffect(() => {
     unlockAudio();
@@ -194,7 +203,17 @@ export function BattlePage() {
       {hud?.phase === 'series_end' && <div className="countdown">系列赛结束</div>}
 
       <Joystick input={input} />
-      {hud?.heldB && hud.playerAlive && hud.phase === 'play' && (
+      {tutorial && (
+        <TutorialCoach
+          getState={() => runner.current?.peek() ?? null}
+          onSkip={() => {
+            markTutorialDone();
+            dispatch({ type: 'goLobby', notice: '已跳过新手教程。想再学时点侧边「新手教程」。' });
+          }}
+        />
+      )}
+
+      {!tutorial && hud?.heldB && hud.playerAlive && hud.phase === 'play' && (
         <button
           type="button"
           className="swap-btn"
@@ -206,9 +225,13 @@ export function BattlePage() {
           Q 切换 {hud.heldB}
         </button>
       )}
-      {hud?.held && hud.playerAlive && hud.phase === 'play' && <SkillButton input={input} name={hud.held} />}
+      {!tutorial && hud?.held && hud.playerAlive && hud.phase === 'play' && <SkillButton input={input} name={hud.held} />}
       <DashButton input={input} charge={hud?.charge ?? 0} />
-      <p className="key-hint">电脑：WASD 移动，空格蓄力，E 或 1 释放，Q 或 2 切换，C 切换视角</p>
+      <p className="key-hint">
+        {tutorial
+          ? '电脑：WASD 移动，空格蓄力冲撞'
+          : '电脑：WASD 移动，空格蓄力，E 或 1 释放，Q 或 2 切换，C 切换视角'}
+      </p>
 
       {paused && (
         <div className="modal-mask">
@@ -216,13 +239,18 @@ export function BattlePage() {
             <h2>{online ? '联机对战中' : '已暂停'}</h2>
             {online && <p className="muted">联机时游戏不会暂停。</p>}
             <button className="btn btn-yellow" onClick={() => setPaused(false)}>继续</button>
-            {practice && (
-              <button className="btn btn-blue" onClick={() => runner.current?.finishNow()}>结束练习并结算</button>
+            {casual && (
+              <button className="btn btn-blue" onClick={() => runner.current?.finishNow()}>
+                {tutorial ? '结束教程并结算' : '结束练习并结算'}
+              </button>
             )}
             {online ? (
               <button className="btn btn-gray" onClick={leaveRoom}>离开房间（你的果冻交给电脑）</button>
             ) : (
-              <button className="btn btn-gray" onClick={() => dispatch({ type: 'goLobby' })}>放弃本场，返回大厅</button>
+              <button className="btn btn-gray" onClick={() => {
+                if (tutorial) markTutorialDone();
+                dispatch({ type: 'goLobby' });
+              }}>放弃本场，返回大厅</button>
             )}
           </div>
         </div>

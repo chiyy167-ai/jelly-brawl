@@ -28,9 +28,11 @@ export const GAME = {
   blobs: { max: 6, interval: 3, radius: 0.44, initial: 4 },
   ai: { interval: 0.28, chargeChance: 0.14, chargeRange: 5, chargeHold: 0.45, edgeSafe: 0.72, grace: 3, dashSafe: 0.8 },
   score: { places: [4, 2, 1, 0, 0, 0], lastHit: 1, lastHitWindow: 3 },
-  /** 正式对战 / 联机打满局数；练习只打 1 局 */
+  /** 正式对战 / 联机打满局数；练习与新手教程只打 1 局 */
   series: { rounds: 3, practiceRounds: 1 },
-  match: { bots: 5, practiceBots: 3, spawnRadius: 6 },
+  match: { bots: 5, practiceBots: 3, tutorialBots: 1, spawnRadius: 6 },
+  /** 首次完成新手教程的额外本机奖励 */
+  tutorial: { bonusCoins: 40, bonusXp: 30 },
   online: {
     maxHumans: 4, seats: 4, snapHz: 20, inputHz: 30, resultDelay: 1.6, presenceSec: 8,
     /** 远端角色按这个秒数回放，吸收国内网络抖动 */

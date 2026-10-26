@@ -85,6 +85,15 @@ export function applyMatchRewards(r: MatchResult): Progress {
   return addXp(xp);
 }
 
+/** 首次完成/跳过新手教程的额外奖励（幂等：调用方保证只发一次） */
+export function grantTutorialBonus(): Progress {
+  const t = GAME.tutorial;
+  const p = { ...loadProgress() };
+  p.coins += t.bonusCoins;
+  save(p);
+  return addXp(t.bonusXp);
+}
+
 export function canClaimDaily(): boolean {
   return loadProgress().lastDaily !== today();
 }

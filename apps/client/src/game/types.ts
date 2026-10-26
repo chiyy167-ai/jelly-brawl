@@ -1,6 +1,6 @@
 import type { Rng } from './rng';
 
-export type GameMode = 'match' | 'practice' | 'online';
+export type GameMode = 'match' | 'practice' | 'online' | 'tutorial';
 
 /** 一帧指令：摇杆 + 蓄力；use 释放当前道具，swap 对调两个道具槽 */
 export interface InputCmd {

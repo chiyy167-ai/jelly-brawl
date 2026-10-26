@@ -5,7 +5,9 @@ create table if not exists public.match_history (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   played_at timestamptz not null default now(),
-  mode text not null check (mode in ('match', 'practice', 'online')),
+  -- 已有库若缺 tutorial：alter table public.match_history drop constraint match_history_mode_check;
+  -- 再：alter table public.match_history add constraint match_history_mode_check check (mode in ('match','practice','online','tutorial'));
+  mode text not null check (mode in ('match', 'practice', 'online', 'tutorial')),
   rank int not null check (rank >= 1),
   total int not null check (total >= 1),
   score int not null default 0,

@@ -15,7 +15,7 @@ import { CODE_LENGTH } from '../net/protocol';
 import { useApp } from '../state/AppState';
 import { auth } from '../state/auth';
 import { loadProgress, progressVersion, subscribeProgress, xpBar } from '../state/progress';
-import { loadName, nameStoreVersion, subscribeName } from '../state/storage';
+import { hasDoneTutorial, loadName, nameStoreVersion, subscribeName } from '../state/storage';
 
 const VIEW = { y: 3.4, z: 12, lookY: 0.6, fov: 35, floor: 5.4 };
 
@@ -35,6 +35,32 @@ export function LobbyPage() {
   useEffect(() => { startBgm(); }, []);
   const [modal, setModal] = useState<LobbyModal>(roomCode ? 'multi' : null);
   const [mapNext, setMapNext] = useState<MapPickNext | null>(null);
+
+  const startTutorial = () => {
+    dispatch({ type: 'setMap', mapId: 'candy' });
+    dispatch({ type: 'startBattle', mode: 'tutorial' });
+  };
+
+  // 首次进入大厅自动开引导（有邀请进房时不打断；sessionStorage 防止本页重复自动进）
+  useEffect(() => {
+    if (roomCode || hasDoneTutorial()) return;
+    let cancelled = false;
+    const t = window.setTimeout(() => {
+      if (cancelled || hasDoneTutorial()) return;
+      try {
+        if (sessionStorage.getItem('jb-auto-tut') === '1') return;
+        sessionStorage.setItem('jb-auto-tut', '1');
+      } catch {
+        // 忽略
+      }
+      startTutorial();
+    }, 800);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 只在进大厅时检查一次
+  }, []);
   useSyncExternalStore(subscribeProgress, progressVersion, progressVersion);
   useSyncExternalStore(auth.subscribe, auth.getVersion);
   useSyncExternalStore(subscribeName, nameStoreVersion);
@@ -147,7 +173,12 @@ export function LobbyPage() {
       {mapNext && (
         <MapPickModal next={mapNext} onClose={() => { setMapNext(null); startBgm('lobby'); }} onPicked={afterMap} />
       )}
-      <LobbyModals which={modal} onClose={() => setModal(null)} roomCode={roomCode} />
+      <LobbyModals
+        which={modal}
+        onClose={() => setModal(null)}
+        roomCode={roomCode}
+        onStartTutorial={startTutorial}
+      />
     </div>
   );
 }

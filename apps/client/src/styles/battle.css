@@ -94,6 +94,26 @@
 .pause-menu { display: flex; flex-direction: column; gap: 12px; padding: 20px; text-align: center; }
 .pause-menu h2 { margin: 0 0 6px; }
 
+/* 新手引导教练条 */
+.tutorial-coach {
+  position: absolute; z-index: 12; left: 50%; top: calc(58px + var(--safe-t));
+  transform: translateX(-50%); display: flex; align-items: flex-start; gap: 10px;
+  width: min(520px, calc(100% - 24px)); padding: 10px 12px; border-radius: 16px;
+  background: rgba(29, 42, 110, 0.92); border: 2px solid #8fd3ff; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  color: #fff; pointer-events: auto;
+}
+.tutorial-coach-main { flex: 1; min-width: 0; }
+.tutorial-coach-main strong { display: block; font-size: 16px; margin-bottom: 4px; }
+.tutorial-coach-main p { margin: 0; font-size: 13px; line-height: 1.4; opacity: 0.95; }
+.tutorial-dots { display: flex; gap: 6px; margin-top: 8px; }
+.tutorial-dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.25); }
+.tutorial-dots i.cur { background: #ffd23a; box-shadow: 0 0 0 3px rgba(255, 210, 58, 0.35); }
+.tutorial-dots i.on { background: #7dffb3; }
+.tutorial-skip {
+  flex: 0 0 auto; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.12);
+  color: #cfe0ff; font-size: 12px; font-weight: 800; text-decoration: underline;
+}
+
 /* 手机横屏：HUD 和按钮缩小一点 */
 @media (max-height: 480px) {
   .hud-pill { font-size: 14px; padding: 4px 10px; }

@@ -3,7 +3,7 @@ import { GAME } from './config';
 import type { GameMode, Jelly, MatchState, RoundRank } from './types';
 
 export function seriesRounds(mode: GameMode): number {
-  return mode === 'practice' ? GAME.series.practiceRounds : GAME.series.rounds;
+  return mode === 'practice' || mode === 'tutorial' ? GAME.series.practiceRounds : GAME.series.rounds;
 }
 
 export function blankSeries(mode: GameMode, seats: number): MatchState['series'] {

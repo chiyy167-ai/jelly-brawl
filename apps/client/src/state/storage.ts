@@ -85,6 +85,25 @@ export function markLoaded(): void {
   }
 }
 
+const TUTORIAL_KEY = 'jelly-brawl.tutorial-done';
+
+/** 是否已完成（或跳过）过新手引导局 */
+export function hasDoneTutorial(): boolean {
+  try {
+    return localStorage.getItem(TUTORIAL_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function markTutorialDone(): void {
+  try {
+    localStorage.setItem(TUTORIAL_KEY, '1');
+  } catch {
+    // 忽略
+  }
+}
+
 export function loadHistory(): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);

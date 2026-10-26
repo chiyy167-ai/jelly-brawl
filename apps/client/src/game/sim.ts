@@ -76,7 +76,8 @@ function resetRoundFields(s: MatchState, seed: number): void {
   s.roundEndT = 0;
   s.roundRanks = [];
   s.titles = [];
-  s.events = scheduleEvents(s.rng);
+  const tutorial = s.mode === 'tutorial';
+  s.events = tutorial ? [] : scheduleEvents(s.rng);
   s.holes = [];
   s.warnHole = null;
   s.spin = 0;
@@ -87,8 +88,8 @@ function resetRoundFields(s: MatchState, seed: number): void {
   s.candies.forEach((c) => { c.alive = false; });
   s.puddings.forEach((p) => { p.alive = false; });
   s.hazards = [];
-  // 开局更快见到第一只神秘箱
-  s.itemAcc = Math.max(0, GAME.items.every - GAME.items.firstAt);
+  // 教程不掉道具箱；正式局开局更快见到第一只神秘箱
+  s.itemAcc = tutorial ? 1e9 : Math.max(0, GAME.items.every - GAME.items.firstAt);
   s.blobs.forEach((b) => { b.alive = false; });
   const n = s.jellies.length;
   const base = Math.PI / 2;
@@ -133,11 +134,12 @@ function resetRoundFields(s: MatchState, seed: number): void {
     j.wish = { x: 0, y: 0, charge: false };
   }
   for (let i = 0; i < GAME.blobs.initial; i += 1) spawnBlob(s);
-  seedItems(s, 2);
+  if (!tutorial) seedItems(s, 2);
   s.series.board = 'none';
 }
 
 function baseState(mode: GameMode, jellies: Jelly[], seed: number, mapId: MapId = 'candy'): MatchState {
+  const tutorial = mode === 'tutorial';
   const rng = makeRng(seed);
   const s: MatchState = {
     mode, phase: 'countdown', countdown: GAME.countdown, time: 0,
@@ -149,18 +151,20 @@ function baseState(mode: GameMode, jellies: Jelly[], seed: number, mapId: MapId 
     events: [], holes: [], warnHole: null, spin: 0, frictionScale: 1,
     banner: null, bannerT: 0, alert: null,
     candies: [], puddings: [], hazards: [],
-    itemAcc: Math.max(0, GAME.items.every - GAME.items.firstAt),
+    itemAcc: tutorial ? 1e9 : Math.max(0, GAME.items.every - GAME.items.firstAt),
     candySeq: 0, puddingSeq: 0,
     mapId,
   };
-  s.events = scheduleEvents(s.rng);
+  s.events = tutorial ? [] : scheduleEvents(s.rng);
   for (let i = 0; i < GAME.blobs.initial; i += 1) spawnBlob(s);
-  seedItems(s, 2);
+  if (!tutorial) seedItems(s, 2);
   return s;
 }
 
 export function createMatch(mode: GameMode, playerSkin: string, seed: number, mapId: MapId = 'candy'): MatchState {
-  const bots = mode === 'practice' ? GAME.match.practiceBots : GAME.match.bots;
+  const bots = mode === 'tutorial' ? GAME.match.tutorialBots
+    : mode === 'practice' ? GAME.match.practiceBots
+      : GAME.match.bots;
   const total = bots + 1;
   const base = Math.PI / 2;
   const jellies: Jelly[] = [makeJelly(0, PLAYER_NAME, playerSkin, true, base)];

@@ -8,7 +8,7 @@ const MAX_CLOUD = 50;
 
 interface Row {
   played_at: string;
-  mode: HistoryEntry['mode'];
+  mode: string;
   rank: number;
   total: number;
   score: number;
@@ -97,7 +97,7 @@ export async function fetchCloudHistory(): Promise<HistoryEntry[]> {
 function rowToEntry(r: Row): HistoryEntry {
   return {
     at: new Date(r.played_at).getTime(),
-    mode: r.mode,
+    mode: r.mode as HistoryEntry['mode'],
     rank: r.rank,
     total: r.total,
     score: r.score,
