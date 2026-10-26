@@ -5,17 +5,17 @@ import { isBgmMuted, isMuted, setBgmMuted, setMuted, sfx, unlockAudio } from '..
 import { auth } from '../state/auth';
 import { fetchCloudHistory } from '../state/cloudHistory';
 import {
-  canClaimDaily, claimDaily, exchangeGem, loadProgress, progressVersion, subscribeProgress,
+  canClaimDaily, claimDaily, loadProgress, progressVersion, subscribeProgress,
 } from '../state/progress';
 import { loadHistory, type HistoryEntry } from '../state/storage';
 import { AuthPanel } from './AuthPanel';
+import { ItemsGuideModal, ShopModal } from './ItemShopModals';
 import { Modal } from './Modal';
 import { MultiModal } from './MultiModal';
 
 export type LobbyModal = 'multi' | 'rank' | 'daily' | 'tutorial' | 'items' | 'settings' | 'shop' | null;
 
 const MODE_LABEL = { practice: '练习', match: '对战', online: '联机', tutorial: '教程' } as const;
-const ITEM_GUIDE_URL = `${import.meta.env.BASE_URL}images/item-guide.jpg`;
 
 export function LobbyModals({
   which, onClose, roomCode, onStartTutorial,
@@ -173,30 +173,6 @@ function DailyModal({ onClose }: { onClose(): void }) {
   );
 }
 
-function ShopModal({ onClose }: { onClose(): void }) {
-  useSyncExternalStore(subscribeProgress, progressVersion, progressVersion);
-  const p = loadProgress();
-  const cost = GAME.economy.gemCostCoins;
-  const [msg, setMsg] = useState('');
-  return (
-    <Modal title="商城" onClose={onClose}>
-      <p className="muted">当前：{p.coins} 金币 · {p.gems} 宝石</p>
-      <p className="pending-note">皮肤仍可全部免费试用。暂无真实支付；可用金币兑换宝石。</p>
-      <button
-        className="btn btn-blue"
-        disabled={p.coins < cost}
-        onClick={() => {
-          const next = exchangeGem();
-          setMsg(next ? `兑换成功：-${cost} 金币，+1 宝石` : '金币不足');
-        }}
-      >
-        {cost} 金币 → 1 宝石
-      </button>
-      {msg && <p className="muted">{msg}</p>}
-    </Modal>
-  );
-}
-
 function TutorialModal({ onClose, onStart }: { onClose(): void; onStart?(): void }) {
   return (
     <Modal title="新手教程" onClose={onClose}>
@@ -218,17 +194,6 @@ function TutorialModal({ onClose, onStart }: { onClose(): void; onStart?(): void
       >
         开始引导对局
       </button>
-    </Modal>
-  );
-}
-
-function ItemsGuideModal({ onClose }: { onClose(): void }) {
-  return (
-    <Modal title="道具图鉴" onClose={onClose}>
-      <p className="muted">场上只掉神秘道具箱；开箱后随机获得下列道具之一。</p>
-      <div className="item-guide">
-        <img src={ITEM_GUIDE_URL} alt="果冻擂台道具设计图：神秘箱与各类道具效果说明" />
-      </div>
     </Modal>
   );
 }

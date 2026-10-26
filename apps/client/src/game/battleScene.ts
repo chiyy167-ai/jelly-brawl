@@ -70,7 +70,7 @@ export class BattleScene {
     this.scene.add(this.arena.group);
 
     for (const j of s.jellies) {
-      const obj = createJelly(j.skinId);
+      const obj = createJelly(j.skinId, j.look);
       this.scene.add(obj.root);
       this.views.set(j.id, { obj, size: j.radius * 2, yaw: 0, wobble: 0 });
     }

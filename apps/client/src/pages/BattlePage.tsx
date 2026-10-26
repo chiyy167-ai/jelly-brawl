@@ -146,7 +146,10 @@ export function BattlePage() {
           <span className="hud-pill hud-title">{title}</span>
           <span className="hud-pill">{roundLabel} · 累计 <b>{hud?.seriesScore ?? 0}</b></span>
           <span className="hud-pill"><IconUser size={22} />剩余 <b>{hud?.alive ?? '-'}</b> 人</span>
-          <span className="hud-pill hud-level">体型 Lv.{hud?.level ?? 1}{hud?.item ? ` · ${hud.item}` : ''}</span>
+          <span className="hud-pill hud-level">
+            体型 Lv.{hud?.level ?? 1}
+            {hud?.buff ? ` · ${hud.buff}` : hud?.held ? ` · ${hud.held}` : ''}
+          </span>
         </div>
         <div className="hud-right">
           <span className="hud-pill">在线 {onlineN ?? '—'}</span>
@@ -225,7 +228,9 @@ export function BattlePage() {
           Q 切换 {hud.heldB}
         </button>
       )}
-      {!tutorial && hud?.held && hud.playerAlive && hud.phase === 'play' && <SkillButton input={input} name={hud.held} />}
+      {!tutorial && hud?.held && hud.playerAlive && hud.phase === 'play' && (
+        <SkillButton input={input} name={hud.held} kind={hud.heldKind} />
+      )}
       <DashButton input={input} charge={hud?.charge ?? 0} />
       <p className="key-hint">
         {tutorial

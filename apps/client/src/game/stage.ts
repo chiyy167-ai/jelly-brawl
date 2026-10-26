@@ -1,10 +1,13 @@
 /** 小型展示舞台：大厅、皮肤页、结算页用它显示果冻（不是战斗场景）。 */
 import * as THREE from 'three';
+import type { CosmeticLook } from '../data/cosmetics';
 import { createJelly, type JellyObject } from './jellyModel';
 import { makeRenderer, renderIfOk } from './webgl';
 
 export interface StageItem {
   skinId: string;
+  /** 换装；不传则用皮肤默认头饰 */
+  look?: CosmeticLook | null;
   x: number;
   z: number;
   /** 果冻宽度（世界单位） */
@@ -112,7 +115,7 @@ export class JellyStage {
     });
     this.extras = [];
     this.jellies = items.map((item, i) => {
-      const obj = createJelly(item.skinId);
+      const obj = createJelly(item.skinId, item.look);
       obj.root.position.set(item.x, item.podium ? podiumHeight(item.podium) : 0, item.z);
       obj.root.scale.setScalar(item.size);
       this.scene.add(obj.root);

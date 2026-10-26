@@ -1,6 +1,7 @@
 /** 联机战斗循环：本地先预测自己的移动，其他人按服务器时间插值，输入仍以服务器为准。 */
 import { applySnap, markResult } from '../net/protocol';
 import { session } from '../net/session';
+import { consumeEquipped } from '../state/loadout';
 import { BattleScene } from './battleScene';
 import { GAME } from './config';
 import { bindKeyboard, readCmd, type InputSource } from './input';
@@ -37,6 +38,8 @@ export class NetRunner {
     const start = session.start;
     if (!start) throw new Error('还没有收到开局信息');
     this.you = start.you;
+    // 联机开局：扣本机已装备库存（服务器侧已按 profile.startItem 发到座位）
+    consumeEquipped();
     this.state = createNetMatch(start.roster, start.seed, start.you, start.mapId ?? 'candy');
     this.scene = new BattleScene(opt.host, this.state);
     if (session.lastSnap) this.onSnap(session.lastSnap);

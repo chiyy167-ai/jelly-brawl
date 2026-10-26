@@ -34,13 +34,15 @@
   background: conic-gradient(#ff3a4a var(--charge, 0deg), transparent 0); -webkit-mask: radial-gradient(circle, transparent 62px, #000 63px); mask: radial-gradient(circle, transparent 62px, #000 63px); }
 .skill-btn {
   position: absolute; z-index: 4; right: calc(36px + var(--safe-r)); bottom: calc(168px + var(--safe-b));
-  min-width: 108px; height: 64px; padding: 6px 12px; border-radius: 18px; border: 4px solid #fff;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-width: 112px; height: 78px; padding: 4px 10px 6px; border-radius: 18px; border: 4px solid #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
   background: linear-gradient(180deg, #ffe56a, #ff9a1f); color: #6a3200; box-shadow: 0 5px 0 #c56a00;
   touch-action: none;
 }
-.skill-btn b { font-size: 16px; line-height: 1; }
-.skill-btn span { font-size: 13px; font-weight: 800; line-height: 1.1; max-width: 96px; }
+.skill-btn .skill-emoji { font-size: 26px; line-height: 1; filter: drop-shadow(0 1px 0 #fff); }
+.skill-btn .skill-ico { display: block; filter: drop-shadow(0 1px 0 #fff); }
+.skill-btn b { font-size: 13px; line-height: 1.1; }
+.skill-btn .skill-name { font-size: 12px; font-weight: 800; line-height: 1.15; max-width: 100px; text-align: center; }
 .skill-btn:active { transform: translateY(2px); box-shadow: 0 3px 0 #c56a00; }
 .swap-btn {
   position: absolute; z-index: 4; right: calc(36px + var(--safe-r)); bottom: calc(244px + var(--safe-b));
@@ -122,8 +124,9 @@
   .joy-base { width: 120px; height: 120px; left: calc(80px + var(--safe-l)); top: calc(100% - 80px - var(--safe-b)); }
   .joy-knob { width: 54px; height: 54px; }
   .dash-btn { right: calc(20px + var(--safe-r)); bottom: calc(18px + var(--safe-b)); }
-  .skill-btn { right: calc(28px + var(--safe-r)); bottom: calc(148px + var(--safe-b)); height: 54px; }
-  .swap-btn { right: calc(28px + var(--safe-r)); bottom: calc(210px + var(--safe-b)); height: 40px; }
+  .skill-btn { right: calc(28px + var(--safe-r)); bottom: calc(148px + var(--safe-b)); height: 68px; min-width: 96px; }
+  .skill-btn .skill-emoji { font-size: 22px; }
+  .swap-btn { right: calc(28px + var(--safe-r)); bottom: calc(224px + var(--safe-b)); height: 40px; }
 }
 /* 竖屏：缩圈横幅放到 HUD 下方，避免重叠 */
 @media (orientation: portrait) {

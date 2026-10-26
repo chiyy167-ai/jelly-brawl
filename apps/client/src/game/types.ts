@@ -19,10 +19,19 @@ export type HazardKind = 'pad' | 'banana' | 'mine';
 export type MapId = 'candy' | 'volcano';
 export type EventKind = 'rotate' | 'collapse' | 'ice' | 'gravity';
 
+/** 换装外观（与 cosmetics 一致；放这里方便 sim/协议引用） */
+export interface JellyLook {
+  eye: string;
+  mouth: string;
+  gear: string;
+}
+
 export interface Jelly {
   id: number;
   name: string;
   skinId: string;
+  /** 眼睛 / 嘴巴 / 头饰 */
+  look: JellyLook;
   isPlayer: boolean;
   human: boolean;
   x: number; y: number;

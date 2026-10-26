@@ -182,3 +182,63 @@
   border-radius: 14px; background: #eaf4ff; padding: 6px;
 }
 .item-guide img { display: block; width: 100%; height: auto; border-radius: 10px; }
+
+.loadout-ready {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 0 0 10px; padding: 8px 12px; border-radius: 12px;
+  background: linear-gradient(180deg, #fff7d2, #ffe08a); color: #6a3200; font-weight: 800;
+}
+.shop-item-list, .codex-list {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: min(48vh, 420px); overflow: auto; margin: 8px 0 4px; padding-right: 4px;
+}
+.shop-item-row, .codex-card {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px; border-radius: 14px; background: #eaf5ff;
+}
+.shop-item-row.is-eq { outline: 2px solid #ffb21f; background: #fff6d8; }
+.shop-item-ico, .codex-ico {
+  flex: 0 0 48px; width: 48px; height: 48px; border-radius: 14px; border: 3px solid #fff;
+  display: grid; place-items: center; font-size: 24px;
+  box-shadow: 0 3px 0 rgba(40, 60, 120, 0.18);
+}
+.shop-item-body, .codex-body { flex: 1; min-width: 0; }
+.shop-item-body p, .codex-tip { margin: 2px 0 0; font-size: 13px; font-weight: 700; color: #3a4a7a; }
+.shop-item-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.shop-item-head b { font-size: 15px; color: #1e2a5a; }
+.shop-bag { font-size: 12px; color: #5b6799; font-weight: 700; }
+.shop-item-acts { display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; }
+.shop-item-acts .btn { min-width: 72px; padding: 6px 10px; font-size: 13px; }
+.item-price { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 900; color: #1f6fe0; }
+.currency-inline { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.item-tier {
+  font-size: 11px; font-weight: 900; padding: 2px 7px; border-radius: 999px; color: #fff;
+}
+.tier-C { background: #7a8aa8; }
+.tier-B { background: #2f9e4a; }
+.tier-A { background: #1f86f0; }
+.tier-S { background: linear-gradient(90deg, #c44bff, #ff5a8a); }
+.codex-buy {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  margin: 4px 0 0; font-size: 12px; font-weight: 800; color: #1f6fe0;
+}
+
+.main-tabs { margin: 0 0 10px; flex-direction: row !important; }
+.outfit-panel { display: flex; flex-direction: column; gap: 10px; }
+.outfit-tabs { flex-direction: row !important; }
+.outfit-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+  max-height: min(36vh, 320px); overflow: auto;
+}
+.outfit-card {
+  display: flex; flex-direction: column; gap: 4px; align-items: flex-start; text-align: left;
+  padding: 10px 12px; border-radius: 14px; background: #eaf5ff; border: 3px solid transparent;
+  color: #1e2a5a; font-weight: 800;
+}
+.outfit-card span { font-size: 12px; font-weight: 600; color: #5b6799; }
+.outfit-card.selected { border-color: #ffb21f; background: #fff6d8; }
+.outfit-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.outfit-chips button {
+  padding: 8px 12px; border-radius: 999px; background: #eaf5ff; color: #1e2a5a; font-weight: 800;
+}
+.outfit-chips button.on { background: linear-gradient(180deg, #ffe66b, #ffb21f); color: #7a3b00; box-shadow: 0 3px 0 #d9730f; }

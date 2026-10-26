@@ -1,6 +1,6 @@
 /** 02 游戏大厅：开始游戏、单人练习、多人入口、皮肤、排行榜、每日奖励、新手教程。 */
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { IconBook, IconCodex, IconCoin, IconCrown, IconGear, IconGem, IconGift, IconPlay, IconShirt, IconUser, IconUsers } from '../components/icons';
+import { IconBook, IconCodex, IconCoin, IconCrown, IconGear, IconGem, IconGift, IconPlay, IconShirt, IconShop, IconUser, IconUsers } from '../components/icons';
 import { JellyStageView } from '../components/JellyStageView';
 import { LobbyModals, type LobbyModal } from '../components/LobbyModals';
 import { Logo } from '../components/Logo';
@@ -14,6 +14,7 @@ import { onlineNow, subscribeOnline } from '../net/onlineCount';
 import { CODE_LENGTH } from '../net/protocol';
 import { useApp } from '../state/AppState';
 import { auth } from '../state/auth';
+import { loadOutfit, outfitVersion, subscribeOutfit } from '../state/outfit';
 import { loadProgress, progressVersion, subscribeProgress, xpBar } from '../state/progress';
 import { hasDoneTutorial, loadName, nameStoreVersion, subscribeName } from '../state/storage';
 
@@ -62,6 +63,7 @@ export function LobbyPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 只在进大厅时检查一次
   }, []);
   useSyncExternalStore(subscribeProgress, progressVersion, progressVersion);
+  const outfitVer = useSyncExternalStore(subscribeOutfit, outfitVersion, outfitVersion);
   useSyncExternalStore(auth.subscribe, auth.getVersion);
   useSyncExternalStore(subscribeName, nameStoreVersion);
   const onlineN = useSyncExternalStore(subscribeOnline, onlineNow, () => null);
@@ -71,14 +73,15 @@ export function LobbyPage() {
   const displayName = loadName();
   const avatar = useMemo(() => renderThumbnails([state.skinId])[state.skinId], [state.skinId]);
   const items = useMemo(() => {
+    const look = loadOutfit();
     const others = ['blue', 'cool', 'wizard'].filter((id) => id !== state.skinId);
     return [
-      { skinId: state.skinId, x: -0.4, z: 0, size: 3.1, yaw: 0.25 },
+      { skinId: state.skinId, look, x: -0.4, z: 0, size: 3.1, yaw: 0.25 },
       { skinId: others[0], x: 2.4, z: 0.6, size: 1.6, yaw: -0.3 },
       { skinId: others[1], x: 4.1, z: -0.2, size: 1.4, yaw: -0.5 },
       { skinId: others[2] ?? 'sprout', x: -3.6, z: 0.3, size: 1.3, yaw: 0.5 },
     ];
-  }, [state.skinId]);
+  }, [state.skinId, outfitVer]);
 
   const afterMap = (mapId: MapId) => {
     dispatch({ type: 'setMap', mapId });
@@ -111,17 +114,21 @@ export function LobbyPage() {
         </div>
         <div className="currency-row">
           <span className="online-pill" aria-label="当前在线人数">在线 {onlineN ?? '—'}</span>
-          <button className="currency" onClick={() => setModal('shop')} aria-label={`宝石 ${prog.gems}`}>
-            <IconGem /><span>{prog.gems}</span><em>+</em>
-          </button>
-          <button className="currency" onClick={() => setModal('shop')} aria-label={`金币 ${prog.coins}`}>
-            <IconCoin /><span>{prog.coins}</span><em>+</em>
-          </button>
+          <span className="currency" aria-label={`宝石 ${prog.gems}`}>
+            <IconGem /><span>{prog.gems}</span>
+          </span>
+          <span className="currency" aria-label={`金币 ${prog.coins}`}>
+            <IconCoin /><span>{prog.coins}</span>
+          </span>
           <button className="round-btn" onClick={() => setModal('settings')} aria-label="设置"><IconGear /></button>
         </div>
       </header>
 
       <aside className="lobby-side">
+        <button className="side-btn side-shop" onClick={() => setModal('shop')}>
+          <IconShop size={40} />
+          <span>商城</span>
+        </button>
         <button className="side-btn side-daily" onClick={() => setModal('daily')}>
           <IconGift size={40} />
           <span>每日奖励</span>
@@ -154,7 +161,7 @@ export function LobbyPage() {
         <div className="lobby-group">
           <button className="tile-btn" onClick={() => dispatch({ type: 'openSkins' })}>
             <IconShirt />
-            <span>果冻皮肤</span>
+            <span>换装</span>
           </button>
           <button className="tile-btn" onClick={() => setModal('rank')}>
             <IconCrown />

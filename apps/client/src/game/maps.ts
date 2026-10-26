@@ -1,4 +1,5 @@
 /** 决斗场外观主题：只改天空 / 雾 / 灯光 / 地砖色，不改物理。 */
+import { ITEM_BY_ID, itemColor, itemName } from './itemCatalog';
 import type { MapId } from './types';
 
 export interface MapTheme {
@@ -50,37 +51,19 @@ export function resolveMap(id: string | undefined | null): MapId {
   return id === 'volcano' ? 'volcano' : 'candy';
 }
 
-/** HUD / 开箱提示中文名 */
+/** HUD / 开箱提示中文名（兼容旧引用） */
 export const ITEM_NAMES: Record<string, string> = {
-  rocket: '冲刺火箭',
-  shield: '护盾',
-  pad: '弹跳跳板',
-  grow: '体型果块',
-  magnet: '磁力糖果',
-  banana: '香蕉皮',
-  mine: '地雷',
-  snow: '冰冻雪球',
-  star: '能量星',
-  glove: '拳击手套',
-  cake: '美味蛋糕',
+  ...Object.fromEntries(Object.values(ITEM_BY_ID).map((d) => [d.id, d.name])),
   box: '神秘道具箱',
 };
 
 /** 场上箱子 / 装置着色 */
 export const ITEM_COLORS: Record<string, number> = {
   box: 0xffc83a,
-  rocket: 0xff4a3a,
-  shield: 0x4fb8ff,
-  pad: 0xb07cff,
-  grow: 0x6fdc6a,
-  magnet: 0xff5a5a,
-  banana: 0xffe14a,
-  mine: 0x8a40c8,
-  snow: 0xa8e8ff,
-  star: 0xffd84a,
-  glove: 0xff3a4a,
-  cake: 0xff8fc1,
+  ...Object.fromEntries(Object.values(ITEM_BY_ID).map((d) => [d.id, d.color])),
 };
+
+export { itemName, itemColor };
 
 export const HAZARD_COLORS: Record<string, number> = {
   pad: 0xb07cff,

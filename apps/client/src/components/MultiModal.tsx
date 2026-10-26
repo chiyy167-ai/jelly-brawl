@@ -3,6 +3,8 @@ import { useState, useSyncExternalStore } from 'react';
 import { CODE_LENGTH, cleanProfile } from '../net/protocol';
 import { serverUrl, session } from '../net/session';
 import { useApp } from '../state/AppState';
+import { peekEquipped } from '../state/loadout';
+import { loadOutfit } from '../state/outfit';
 import { loadName, saveName } from '../state/storage';
 import { Modal } from './Modal';
 
@@ -17,7 +19,9 @@ export function MultiModal({ onClose, initialCode = '' }: { onClose(): void; ini
   const name = loadName();
 
   const go = async (join: boolean) => {
-    const profile = cleanProfile({ name, skinId: state.skinId });
+    const profile = cleanProfile({
+      name, skinId: state.skinId, startItem: peekEquipped(), look: loadOutfit(),
+    });
     saveName(profile.name);
     const ok = join ? await session.join(code, profile) : await session.create(profile);
     if (ok) dispatch({ type: 'enterRoom' });

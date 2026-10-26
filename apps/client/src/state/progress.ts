@@ -120,6 +120,26 @@ export function exchangeGem(): Progress | null {
   return p;
 }
 
+/** 扣金币（商城买道具） */
+export function spendCoins(n: number): boolean {
+  const need = Math.max(0, Math.floor(n));
+  const p = { ...loadProgress() };
+  if (p.coins < need) return false;
+  p.coins -= need;
+  save(p);
+  return true;
+}
+
+/** 扣宝石（传说道具） */
+export function spendGems(n: number): boolean {
+  const need = Math.max(0, Math.floor(n));
+  const p = { ...loadProgress() };
+  if (p.gems < need) return false;
+  p.gems -= need;
+  save(p);
+  return true;
+}
+
 export function xpBar(): { level: number; xp: number; need: number; pct: number } {
   const p = loadProgress();
   const need = xpToNext(p.level);

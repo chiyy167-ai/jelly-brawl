@@ -5,23 +5,41 @@ import { GAME, platformTarget, shrinkTimes } from './config';
 import { computeRewards } from './economy';
 import { scheduleEvents, tickEvents } from './events';
 import { collidePuddings, tickGhost } from './ghost';
-import { seedItems, swapHeld, tickItems, useHeldItem } from './items';
+import { cleanLook, DEFAULT_LOOK, type CosmeticLook } from '../data/cosmetics';
+import { getSkin } from '../data/skins';
+import { itemEmoji, itemName } from './itemCatalog';
+import { grantHeld, seedItems, swapHeld, tickItems, useHeldItem } from './items';
 import { applyLevel, collideAll, eatBlobs, eliminate, integrate, settleGhost, steer } from './physics';
 import { makeRng } from './rng';
 import { awardRound, blankSeries } from './series';
 import type {
-  GameMode, InputCmd, Jelly, MapId, MatchResult, MatchState, RankEntry,
+  GameMode, InputCmd, ItemKind, Jelly, JellyLook, MapId, MatchResult, MatchState, RankEntry,
 } from './types';
+
+function resolveLook(skinId: string, look?: CosmeticLook | JellyLook | null): JellyLook {
+  if (look) return cleanLook(look as CosmeticLook);
+  const gear = getSkin(skinId).accessory;
+  return { ...DEFAULT_LOOK, gear };
+}
+
+function announceStartItem(s: MatchState, j: Jelly, kind: ItemKind): void {
+  if (!j.isPlayer) return;
+  s.banner = `开局携带 ${itemEmoji(kind)} ${itemName(kind)}`;
+  s.bannerT = 1.5;
+}
 
 const BOT_NAMES = ['蓝蓝', '柠柠', '青青', '葡葡', '莓莓', '星星'];
 export const PLAYER_NAME = '果冻小王子';
 const SHRINKS = shrinkTimes();
 const IDLE: InputCmd = { x: 0, y: 0, charge: false };
 
-function makeJelly(id: number, name: string, skinId: string, isPlayer: boolean, angle: number, human = isPlayer): Jelly {
+function makeJelly(
+  id: number, name: string, skinId: string, isPlayer: boolean, angle: number,
+  human = isPlayer, look?: CosmeticLook | JellyLook | null,
+): Jelly {
   const r = GAME.match.spawnRadius;
   const j: Jelly = {
-    id, name, skinId, isPlayer, human,
+    id, name, skinId, look: resolveLook(skinId, look), isPlayer, human,
     x: Math.cos(angle) * r, y: Math.sin(angle) * r, prevX: 0, prevY: 0,
     vx: 0, vy: 0, facing: angle + Math.PI, level: 1,
     radius: 0, mass: 0, speed: 0, impact: 0, resist: 0,
@@ -43,6 +61,9 @@ export interface RosterSeat {
   name: string;
   skinId: string;
   human: boolean;
+  /** 开局携带（仅系列赛第一局；电脑不带） */
+  startItem?: ItemKind | null;
+  look?: CosmeticLook | JellyLook | null;
 }
 
 export function botSeat(index: number, usedSkins: string[]): RosterSeat {
@@ -161,25 +182,43 @@ function baseState(mode: GameMode, jellies: Jelly[], seed: number, mapId: MapId 
   return s;
 }
 
-export function createMatch(mode: GameMode, playerSkin: string, seed: number, mapId: MapId = 'candy'): MatchState {
+export function createMatch(
+  mode: GameMode,
+  playerSkin: string,
+  seed: number,
+  mapId: MapId = 'candy',
+  startItem: ItemKind | null = null,
+  playerLook?: CosmeticLook | JellyLook | null,
+): MatchState {
   const bots = mode === 'tutorial' ? GAME.match.tutorialBots
     : mode === 'practice' ? GAME.match.practiceBots
       : GAME.match.bots;
   const total = bots + 1;
   const base = Math.PI / 2;
-  const jellies: Jelly[] = [makeJelly(0, PLAYER_NAME, playerSkin, true, base)];
+  const jellies: Jelly[] = [makeJelly(0, PLAYER_NAME, playerSkin, true, base, true, playerLook)];
   const botSkins = BOT_SKINS.filter((id) => id !== playerSkin);
   for (let i = 1; i < total; i += 1) {
     jellies.push(makeJelly(i, BOT_NAMES[i - 1], botSkins[(i - 1) % botSkins.length], false, base + (i / total) * Math.PI * 2));
   }
-  return baseState(mode, jellies, seed, mapId);
+  const s = baseState(mode, jellies, seed, mapId);
+  if (mode !== 'tutorial' && startItem) {
+    grantHeld(jellies[0], startItem);
+    announceStartItem(s, jellies[0], startItem);
+  }
+  return s;
 }
 
 export function createNetMatch(roster: RosterSeat[], seed: number, localId: number, mapId: MapId = 'candy'): MatchState {
   const total = roster.length;
   const jellies = roster.map((p, i) =>
-    makeJelly(i, p.name, p.skinId, i === localId, Math.PI / 2 + (i / total) * Math.PI * 2, p.human));
-  return baseState('online', jellies, seed, mapId);
+    makeJelly(i, p.name, p.skinId, i === localId, Math.PI / 2 + (i / total) * Math.PI * 2, p.human, p.look));
+  const s = baseState('online', jellies, seed, mapId);
+  roster.forEach((p, i) => {
+    if (!p.human || !p.startItem) return;
+    grantHeld(jellies[i], p.startItem);
+    announceStartItem(s, jellies[i], p.startItem);
+  });
+  return s;
 }
 
 function currentWarn(time: number): MatchState['warn'] {

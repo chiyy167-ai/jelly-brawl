@@ -48,6 +48,15 @@ export const IconGem = ({ size = 28 }: P) => (
 export const IconCoin = ({ size = 28 }: P) => (
   <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden><circle cx="14" cy="14" r="12" fill="#ffc21f" stroke="#e38b00" strokeWidth="2" /><circle cx="14" cy="14" r="7" fill="none" stroke="#fff0a8" strokeWidth="2" /></svg>
 );
+/** 商城购物袋 */
+export const IconShop = ({ size = 36 }: P) => (
+  <svg width={size} height={size} viewBox="0 0 36 36" aria-hidden>
+    <path d="M8 12h20l-2 18H10z" fill="#ff9a3a" stroke="#fff" strokeWidth="2" strokeLinejoin="round" />
+    <path d="M13 12c0-4 2.2-7 5-7s5 3 5 7" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
+    <circle cx="27" cy="9" r="5" fill="#ffe56a" stroke="#fff" strokeWidth="1.5" />
+    <path d="M27 7v4M25 9h4" stroke="#e38b00" strokeWidth="1.6" strokeLinecap="round" />
+  </svg>
+);
 export const IconTimer = ({ size = 26 }: P) => (
   <svg width={size} height={size} viewBox="0 0 26 26" aria-hidden><circle cx="13" cy="15" r="9" fill="none" stroke="currentColor" strokeWidth="2.5" /><path d="M13 15V10M10 2h6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
 );

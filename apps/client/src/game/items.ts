@@ -1,6 +1,7 @@
 /** 神秘道具箱掉落、开箱、持续效果与地面装置。 */
 import { GAME } from './config';
 import { onStand } from './events';
+import { itemEmoji, itemName } from './itemCatalog';
 import { ITEM_COLORS } from './maps';
 import type { Candy, Hazard, HazardKind, ItemKind, Jelly, MatchState } from './types';
 
@@ -31,7 +32,8 @@ function landPoint(s: MatchState): { x: number; y: number } {
   return { x: 0, y: 0 };
 }
 
-function giveItem(j: Jelly, kind: ItemKind): void {
+/** 塞进当前槽；已满则进备用槽 */
+export function grantHeld(j: Jelly, kind: ItemKind): void {
   if (!j.item) j.item = kind;
   else j.itemB = kind;
   j.itemHold = 0;
@@ -74,8 +76,8 @@ function openBox(s: MatchState, jellyId: number): void {
   const j = s.jellies[jellyId];
   if (!j) return;
   const kind = ITEM_KINDS[s.rng.int(ITEM_KINDS.length)];
-  giveItem(j, kind);
-  const text = `获得${lootBanner(kind)}`;
+  grantHeld(j, kind);
+  const text = `获得 ${itemEmoji(kind)} ${lootBanner(kind)}`;
   popItem(s, j, kind);
   if (j.isPlayer) {
     s.banner = text;
@@ -90,7 +92,7 @@ export function useHeldItem(s: MatchState, j: Jelly): void {
   if (!kind || !j.alive) return;
   if ((kind === 'glove' || kind === 'snow') && j.gloveMul > 1) return;
   const it = GAME.items;
-  let text = lootBanner(kind);
+  let text = `${itemEmoji(kind)} ${lootBanner(kind)}`;
   if (kind === 'shield') j.shield = it.shield.duration;
   else if (kind === 'magnet') j.magnet = it.magnet.duration;
   else if (kind === 'rocket') j.rocket = it.rocket.duration;
@@ -99,10 +101,10 @@ export function useHeldItem(s: MatchState, j: Jelly): void {
   else if (kind === 'pad' || kind === 'banana' || kind === 'mine') placeHazard(s, kind, j);
   else if (kind === 'glove') {
     j.gloveMul = it.glove.knockMul;
-    text = '下一次冲刺增强';
+    text = `${itemEmoji(kind)} 下一次冲刺增强`;
   } else if (kind === 'snow') {
     j.gloveMul = 2;
-    text = '下一次冲刺冰冻';
+    text = `${itemEmoji(kind)} 下一次冲刺冰冻`;
   }
   popItem(s, j, kind);
   if (kind !== 'glove' && kind !== 'snow') {
@@ -117,20 +119,7 @@ export function useHeldItem(s: MatchState, j: Jelly): void {
 }
 
 function lootBanner(kind: ItemKind): string {
-  const map: Record<ItemKind, string> = {
-    rocket: '冲刺火箭！',
-    shield: '护盾！',
-    pad: '弹跳跳板！',
-    grow: '体型果块！',
-    magnet: '磁力糖果！',
-    banana: '香蕉皮！',
-    mine: '地雷！',
-    snow: '冰冻雪球！',
-    star: '能量星！',
-    glove: '拳击手套！',
-    cake: '美味蛋糕！',
-  };
-  return map[kind];
+  return `${itemName(kind)}！`;
 }
 
 function pullBlobs(s: MatchState, jid: number, dt: number): void {

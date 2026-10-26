@@ -104,7 +104,13 @@ export class JellyRoom extends Room {
   }
 
   private startMatch(): void {
-    const roster: RosterSeat[] = this.order.map((id) => ({ ...this.profiles.get(id)!, human: true }));
+    const roster: RosterSeat[] = this.order.map((id) => {
+      const p = this.profiles.get(id)!;
+      return {
+        name: p.name, skinId: p.skinId, human: true,
+        startItem: p.startItem ?? null, look: p.look ?? null,
+      };
+    });
     const used = roster.map((p) => p.skinId);
     for (let i = 0; roster.length < GAME.online.seats; i += 1) {
       const bot = botSeat(i, used);

@@ -1,11 +1,13 @@
 /** 战斗主循环：60Hz 固定步长推进逻辑，requestAnimationFrame 插值渲染。 */
+import { consumeEquipped } from '../state/loadout';
+import { loadOutfit } from '../state/outfit';
 import { BattleScene } from './battleScene';
 import { GAME } from './config';
 import { bindKeyboard, readCmd, type InputSource } from './input';
-import { ITEM_NAMES } from './maps';
+import { itemName } from './itemCatalog';
 import { awardRound } from './series';
 import { createMatch, matchResult, stepMatch } from './sim';
-import type { GameMode, MapId, MatchResult, MatchState } from './types';
+import type { GameMode, ItemKind, MapId, MatchResult, MatchState } from './types';
 
 export interface Hud {
   phase: MatchState['phase'];
@@ -26,14 +28,29 @@ export interface Hud {
   roundRanks: MatchState['roundRanks'];
   ghostCd: number;
   item: string | null;
-  /** 当前槽 */
+  /** 当前槽显示名 */
   held: string | null;
+  heldKind: ItemKind | null;
   /** 备用槽 */
   heldB: string | null;
+  heldBKind: ItemKind | null;
+  /** 持续效果短标签 */
+  buff: string | null;
+}
+
+function label(kind: ItemKind | null | undefined): string | null {
+  if (!kind) return null;
+  return itemName(kind);
 }
 
 export function hudOf(s: MatchState): Hud {
   const p = s.jellies.find((j) => j.isPlayer) ?? s.jellies[0];
+  const buffKind: ItemKind | null = p.rocket > 0 ? 'rocket'
+    : p.star > 0 ? 'star'
+      : p.freezeT > 0 ? 'snow'
+        : p.magnet > 0 ? 'magnet'
+          : p.shield > 0 ? 'shield'
+            : null;
   return {
     phase: s.phase,
     countdown: Math.ceil(s.countdown),
@@ -52,15 +69,12 @@ export function hudOf(s: MatchState): Hud {
     alert: s.alert,
     roundRanks: s.roundRanks,
     ghostCd: p.ghostCd,
-    held: p.item ? (ITEM_NAMES[p.item] ?? p.item) : null,
-    heldB: p.itemB ? (ITEM_NAMES[p.itemB] ?? p.itemB) : null,
-    item: p.item ? (ITEM_NAMES[p.item] ?? p.item)
-      : p.rocket > 0 ? ITEM_NAMES.rocket
-        : p.star > 0 ? ITEM_NAMES.star
-          : p.freezeT > 0 ? ITEM_NAMES.snow
-            : p.magnet > 0 ? ITEM_NAMES.magnet
-              : p.shield > 0 ? ITEM_NAMES.shield
-                : null,
+    held: label(p.item),
+    heldKind: p.item,
+    heldB: label(p.itemB),
+    heldBKind: p.itemB,
+    item: label(p.item) ?? label(buffKind),
+    buff: label(buffKind),
   };
 }
 
@@ -90,7 +104,9 @@ export class BattleRunner {
 
   constructor(private opt: RunnerOptions) {
     const seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
-    this.state = createMatch(opt.mode, opt.skinId, seed, opt.mapId ?? 'candy');
+    // 教程不带开局道具；正式局从背包消耗已装备的一件
+    const start = opt.mode === 'tutorial' ? null : consumeEquipped();
+    this.state = createMatch(opt.mode, opt.skinId, seed, opt.mapId ?? 'candy', start, loadOutfit());
     this.scene = new BattleScene(opt.host, this.state);
     if (import.meta.env.DEV) (window as unknown as { __jb?: MatchState }).__jb = this.state;
     this.unbindKeys = bindKeyboard();
