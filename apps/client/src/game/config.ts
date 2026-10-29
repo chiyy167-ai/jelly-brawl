@@ -28,10 +28,19 @@ export const GAME = {
   blobs: { max: 6, interval: 3, radius: 0.44, initial: 4 },
   ai: { interval: 0.28, chargeChance: 0.14, chargeRange: 5, chargeHold: 0.45, edgeSafe: 0.72, grace: 3, dashSafe: 0.8 },
   score: { places: [4, 2, 1, 0, 0, 0], lastHit: 1, lastHitWindow: 3 },
-  /** 正式对战 / 联机打满局数；练习只打 1 局 */
+  /** 正式对战 / 联机打满局数；练习与新手教程只打 1 局 */
   series: { rounds: 3, practiceRounds: 1 },
-  match: { bots: 5, practiceBots: 3, spawnRadius: 6 },
-  online: { maxHumans: 4, seats: 4, snapHz: 20, inputHz: 30, resultDelay: 1.6, presenceSec: 8 },
+  match: { bots: 5, practiceBots: 3, tutorialBots: 1, spawnRadius: 6 },
+  /** 首次完成新手教程的额外本机奖励 */
+  tutorial: { bonusCoins: 40, bonusXp: 30 },
+  online: {
+    maxHumans: 4, seats: 4, snapHz: 20, inputHz: 30, resultDelay: 1.6, presenceSec: 8,
+    /** 远端角色按这个秒数回放，吸收国内网络抖动 */
+    interpDelay: 0.1,
+    /** 本地预测和服务器差这么远才硬对齐（普通延迟下的领先量不要拉回去） */
+    predictSnap: 12,
+    predictBlend: 0.03,
+  },
   fall: { gravity: 30, hideAfter: 2 },
   tile: { radius: 1.05, height: 0.7 },
   camera: {
@@ -48,15 +57,16 @@ export const GAME = {
   items: {
     /** 开局约 3 秒掉第一箱，之后每 8 秒一箱 */
     every: 8, firstAt: 3, maxOnField: 3, radius: 0.9, fallSeconds: 0.4,
-    shield: { duration: 3.2 },
-    magnet: { duration: 5, radius: 6.4, pull: 8.8 },
-    rocket: { duration: 2.2, speedMul: 1.75, turnScale: 0.35 },
-    star: { duration: 4, speedMul: 1.35, impactMul: 1.45 },
-    glove: { knockMul: 2.4 },
-    snow: { freeze: 2.2 },
-    pad: { life: 12, radius: 1.5, impulse: 22, air: 0.85, arm: 0.35 },
-    banana: { life: 10, radius: 1.15, slip: 1.4, spin: 18, arm: 0.25 },
-    mine: { life: 14, radius: 1.2, blast: 4.4, force: 26, arm: 0.55 },
+    // 强度已按「开局可购买」下调，避免买强道具直接碾压
+    shield: { duration: 2.6 },
+    magnet: { duration: 4, radius: 5.6, pull: 7.2 },
+    rocket: { duration: 1.6, speedMul: 1.45, turnScale: 0.4 },
+    star: { duration: 3.2, speedMul: 1.22, impactMul: 1.25 },
+    glove: { knockMul: 1.85 },
+    snow: { freeze: 1.6 },
+    pad: { life: 11, radius: 1.45, impulse: 18, air: 0.75, arm: 0.35 },
+    banana: { life: 9, radius: 1.1, slip: 1.2, spin: 15, arm: 0.25 },
+    mine: { life: 12, radius: 1.15, blast: 3.6, force: 18, arm: 0.55 },
   },
   ghost: { puddingRadius: 1.44, puddingMass: 0.9, puddingLife: 8, cooldown: 10, alpha: 0.45 },
   /** 整场结算奖励（练习再 × practiceScale） */

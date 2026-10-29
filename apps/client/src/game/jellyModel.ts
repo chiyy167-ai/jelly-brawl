@@ -1,7 +1,10 @@
-/** 根据皮肤生成一个果冻 3D 对象：共用模型网格，换色 + 小配件。 */
+/** 根据皮肤 + 换装生成果冻 3D 对象：共用模型网格，换色 + 五官/头饰。 */
 import * as THREE from 'three';
+import { cleanLook, DEFAULT_LOOK, type CosmeticLook, type GearId } from '../data/cosmetics';
 import { getSkin, type Accessory, type Skin } from '../data/skins';
+import type { JellyLook } from './types';
 import { getJellyTemplate } from './assets';
+import { buildEyes, buildGear, buildMouth } from './jellyCosmetics';
 
 /** 模型正面朝向修正（弧度），让果冻默认面向 +Z */
 export const MODEL_YAW = 0;
@@ -45,8 +48,16 @@ export function makeSkinMaterial(skin: Skin, base?: THREE.MeshStandardMaterial):
   return mat;
 }
 
-/** 创建一个果冻：root 用来摆位置，body 用来做朝向和形变。 */
-export function createJelly(skinId: string): JellyObject {
+/** 无自定义换装时，沿用皮肤自带配件当头饰 */
+export function lookForSkin(skinId: string, look?: CosmeticLook | JellyLook | null): CosmeticLook {
+  if (look) return cleanLook(look as Partial<CosmeticLook>);
+  const acc = getSkin(skinId).accessory as GearId | Accessory;
+  const gear = (acc === 'none' ? 'none' : acc) as GearId;
+  return { ...DEFAULT_LOOK, gear: gear === 'none' ? 'none' : gear };
+}
+
+/** 创建一个果冻：root 摆位置，body 朝向/形变；look 控制五官与头饰。 */
+export function createJelly(skinId: string, look?: CosmeticLook | JellyLook | null): JellyObject {
   const tpl = getJellyTemplate();
   const skin = getSkin(skinId);
   const material = makeSkinMaterial(skin);
@@ -55,87 +66,21 @@ export function createJelly(skinId: string): JellyObject {
   mesh.castShadow = true;
   const body = new THREE.Group();
   body.add(mesh);
-  const extra = buildAccessory(skin.accessory, tpl.height, tpl.depth);
-  if (extra) body.add(extra);
+  const resolved = lookForSkin(skinId, look);
+  const parts = [
+    buildEyes(resolved.eye, tpl.height, tpl.depth),
+    buildMouth(resolved.mouth, tpl.height, tpl.depth),
+    buildGear(resolved.gear, tpl.height, tpl.depth),
+  ];
+  for (const p of parts) if (p) body.add(p);
   const root = new THREE.Group();
   root.add(body);
   const owned: (THREE.BufferGeometry | THREE.Material)[] = [material];
-  extra?.traverse((o) => {
-    const m = o as THREE.Mesh;
-    if (m.isMesh) owned.push(m.geometry, m.material as THREE.Material);
-  });
+  for (const p of parts) {
+    p?.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh) owned.push(m.geometry, m.material as THREE.Material);
+    });
+  }
   return { root, body, material, dispose: () => owned.forEach((x) => x.dispose()) };
-}
-
-function std(color: number, extra: Partial<THREE.MeshStandardMaterialParameters> = {}) {
-  return new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.1, ...extra });
-}
-
-function add(group: THREE.Group, geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number) {
-  const m = new THREE.Mesh(geo, mat);
-  m.position.set(x, y, z);
-  m.castShadow = true;
-  group.add(m);
-  return m;
-}
-
-/** 用基础几何体拼出配件；h 为模型高度，d 为深度（宽度为 1）。 */
-function buildAccessory(type: Accessory, h: number, d: number): THREE.Group | null {
-  if (type === 'none') return null;
-  const g = new THREE.Group();
-  const top = h * 0.97;
-  const front = d * 0.47;
-  const gold = std(0xffc928, { metalness: 0.6, roughness: 0.25 });
-  if (type === 'crown') {
-    add(g, new THREE.CylinderGeometry(0.17, 0.19, 0.1, 20, 1, true), gold, 0, top, 0).material.side = THREE.DoubleSide;
-    for (let i = 0; i < 5; i += 1) {
-      const a = (i / 5) * Math.PI * 2;
-      add(g, new THREE.ConeGeometry(0.045, 0.1, 8), gold, Math.sin(a) * 0.17, top + 0.09, Math.cos(a) * 0.17);
-    }
-    add(g, new THREE.SphereGeometry(0.03, 10, 8), std(0xff3d7f), 0, top + 0.01, 0.19);
-  } else if (type === 'sprout') {
-    const green = std(0x4cc94a);
-    add(g, new THREE.CylinderGeometry(0.015, 0.02, 0.12, 8), green, 0, top + 0.05, 0);
-    const leaf = new THREE.SphereGeometry(0.08, 12, 8);
-    add(g, leaf, green, -0.07, top + 0.11, 0).scale.set(1, 0.35, 0.6);
-    add(g, leaf.clone(), green, 0.07, top + 0.11, 0).scale.set(1, 0.35, 0.6);
-  } else if (type === 'glasses') {
-    const black = std(0x15151c, { roughness: 0.15, metalness: 0.4 });
-    const lens = new THREE.CylinderGeometry(0.1, 0.1, 0.03, 20);
-    add(g, lens, black, -0.12, h * 0.55, front).rotation.x = Math.PI / 2;
-    add(g, lens.clone(), black, 0.12, h * 0.55, front).rotation.x = Math.PI / 2;
-    add(g, new THREE.BoxGeometry(0.1, 0.02, 0.02), black, 0, h * 0.58, front);
-  } else if (type === 'wizard') {
-    const purple = std(0x6b3fd8);
-    add(g, new THREE.CylinderGeometry(0.26, 0.26, 0.025, 24), purple, 0, top, 0);
-    add(g, new THREE.ConeGeometry(0.17, 0.36, 20), purple, 0, top + 0.18, 0).rotation.z = 0.15;
-    add(g, new THREE.SphereGeometry(0.035, 10, 8), gold, -0.02, top + 0.12, 0.15);
-  } else if (type === 'star') {
-    add(g, starGeometry(0.075), std(0xffd84a, { emissive: 0x806000 }), 0.17, h * 0.6, front + 0.02);
-  } else if (type === 'tophat') {
-    const blue = std(0x2f5fd6);
-    add(g, new THREE.CylinderGeometry(0.22, 0.22, 0.025, 24), blue, 0, top, 0);
-    add(g, new THREE.CylinderGeometry(0.13, 0.14, 0.2, 24), blue, 0, top + 0.1, 0);
-    add(g, new THREE.CylinderGeometry(0.142, 0.142, 0.04, 24), std(0xe23b3b), 0, top + 0.03, 0);
-  } else if (type === 'cat') {
-    const ear = new THREE.ConeGeometry(0.09, 0.16, 12);
-    add(g, ear, std(0xff3d55), -0.2, top - 0.02, 0).rotation.z = 0.45;
-    add(g, ear.clone(), std(0xff3d55), 0.2, top - 0.02, 0).rotation.z = -0.45;
-  } else if (type === 'horn') {
-    add(g, new THREE.ConeGeometry(0.05, 0.24, 16), gold, 0, top + 0.08, 0.1).rotation.x = 0.35;
-    add(g, new THREE.SphereGeometry(0.06, 12, 8), std(0xff9ad5), -0.12, top - 0.02, -0.02);
-    add(g, new THREE.SphereGeometry(0.06, 12, 8), std(0x9ad5ff), 0.12, top - 0.02, -0.02);
-  }
-  return g;
-}
-
-function starGeometry(r: number): THREE.BufferGeometry {
-  const shape = new THREE.Shape();
-  for (let i = 0; i < 10; i += 1) {
-    const a = (i / 10) * Math.PI * 2 + Math.PI / 2;
-    const rr = i % 2 === 0 ? r : r * 0.45;
-    if (i === 0) shape.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
-    else shape.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
-  }
-  return new THREE.ExtrudeGeometry(shape, { depth: 0.02, bevelEnabled: false });
 }

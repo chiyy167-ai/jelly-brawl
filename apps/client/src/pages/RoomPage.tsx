@@ -1,6 +1,7 @@
 /** 联机房间：显示房间号和分享链接、4 个座位，房主可以开局。 */
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { SkyBackground } from '../components/SkyBackground';
+import { startBgm } from '../game/audio';
 import { GAME } from '../game/config';
 import { MAPS, MAP_IDS } from '../game/maps';
 import { renderThumbnails } from '../game/stage';
@@ -44,7 +45,11 @@ export function RoomPage() {
   const pickMap = (mapId: MapId) => {
     if (!session.isHost) return;
     dispatch({ type: 'setMap', mapId });
+    startBgm(mapId);
   };
+  useEffect(() => {
+    if (session.isHost) startBgm(state.mapId);
+  }, [state.mapId, lobby?.hostId]);
 
   return (
     <div className="page room-page">
@@ -55,7 +60,7 @@ export function RoomPage() {
         <button className="btn btn-blue room-share" onClick={share} disabled={!lobby}>
           {copied ? '已复制链接' : '分享 / 复制邀请链接'}
         </button>
-        <p className="muted">朋友打开链接，或在「多人对战」里输入房间号就能加入。</p>
+        <p className="muted">把房间号告诉朋友，或让对方打开邀请链接。对方在大厅点「多人对战」，再选「加入房间」。</p>
 
         {session.isHost && !playing ? (
           <div className="map-pick-grid" role="group" aria-label="决斗场">

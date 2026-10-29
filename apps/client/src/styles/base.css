@@ -18,13 +18,13 @@
   -webkit-tap-highlight-color: transparent;
 }
 * { box-sizing: border-box; }
-html, body, #root { margin: 0; height: 100%; overflow: hidden; background: #6cc6ff; }
+html, body, #root { margin: 0; height: var(--app-h, 100%); overflow: hidden; background: #6cc6ff; }
 body { overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
 button:disabled { cursor: not-allowed; opacity: 0.6; }
 img { -webkit-user-drag: none; }
 
-.page { position: fixed; inset: 0; overflow: hidden; }
+.page { position: fixed; left: 0; right: 0; top: var(--app-top, 0px); height: var(--app-h, 100%); overflow: hidden; }
 
 /* 天空背景 */
 .sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; transition: filter 0.4s, background 0.4s; }
@@ -90,7 +90,7 @@ img { -webkit-user-drag: none; }
 .stage canvas { display: block; width: 100% !important; height: 100% !important; }
 
 /* 弹窗 */
-.modal-mask { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(10, 20, 60, 0.55); animation: fade 0.15s; }
+.modal-mask { position: fixed; left: 0; right: 0; top: var(--app-top, 0px); height: var(--app-h, 100%); z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(10, 20, 60, 0.55); animation: fade 0.15s; }
 @keyframes fade { from { opacity: 0; } }
 .modal { width: min(460px, 100%); max-height: calc(100dvh - 32px); overflow: auto; border-radius: 22px; background: #fff; color: #23306b;
   border: 4px solid #8fd3ff; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35); animation: pop 0.2s; }

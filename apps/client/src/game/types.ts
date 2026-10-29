@@ -1,6 +1,6 @@
 import type { Rng } from './rng';
 
-export type GameMode = 'match' | 'practice' | 'online';
+export type GameMode = 'match' | 'practice' | 'online' | 'tutorial';
 
 /** 一帧指令：摇杆 + 蓄力；use 释放当前道具，swap 对调两个道具槽 */
 export interface InputCmd {
@@ -19,10 +19,19 @@ export type HazardKind = 'pad' | 'banana' | 'mine';
 export type MapId = 'candy' | 'volcano';
 export type EventKind = 'rotate' | 'collapse' | 'ice' | 'gravity';
 
+/** 换装外观（与 cosmetics 一致；放这里方便 sim/协议引用） */
+export interface JellyLook {
+  eye: string;
+  mouth: string;
+  gear: string;
+}
+
 export interface Jelly {
   id: number;
   name: string;
   skinId: string;
+  /** 眼睛 / 嘴巴 / 头饰 */
+  look: JellyLook;
   isPlayer: boolean;
   human: boolean;
   x: number; y: number;
@@ -38,6 +47,8 @@ export interface Jelly {
   hurtCd: number;
   dizzy: number;
   alive: boolean;
+  /** 已掉落并回到台上的幽灵，不再重复坠落 */
+  ghosting: boolean;
   elimTime: number;
   fallY: number;
   fallVy: number;

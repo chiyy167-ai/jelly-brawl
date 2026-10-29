@@ -93,6 +93,15 @@ export function applyMatchRewards(r: MatchResult): Progress {
   return addXp(xp);
 }
 
+/** 首次完成/跳过新手教程的额外奖励（幂等：调用方保证只发一次） */
+export function grantTutorialBonus(): Progress {
+  const t = GAME.tutorial;
+  const p = { ...loadProgress() };
+  p.coins += t.bonusCoins;
+  save(p);
+  return addXp(t.bonusXp);
+}
+
 export function canClaimDaily(): boolean {
   return loadProgress().lastDaily !== today();
 }
@@ -117,6 +126,26 @@ export function exchangeGem(): Progress | null {
   p.gems += 1;
   save(p);
   return p;
+}
+
+/** 扣金币（商城买道具） */
+export function spendCoins(n: number): boolean {
+  const need = Math.max(0, Math.floor(n));
+  const p = { ...loadProgress() };
+  if (p.coins < need) return false;
+  p.coins -= need;
+  save(p);
+  return true;
+}
+
+/** 扣宝石（传说道具） */
+export function spendGems(n: number): boolean {
+  const need = Math.max(0, Math.floor(n));
+  const p = { ...loadProgress() };
+  if (p.gems < need) return false;
+  p.gems -= need;
+  save(p);
+  return true;
 }
 
 export function xpBar(): { level: number; xp: number; need: number; pct: number } {

@@ -3,9 +3,11 @@ import { useEffect, useState } from 'react';
 
 const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse)';
 
-// 微信 / QQ 等 App 内置浏览器调用全屏 + 锁定方向会闪退，只能提示手动旋转
+// 微信 / QQ 等 App 内置浏览器，以及 iPhone Safari，都不能可靠地锁横屏
 const IN_APP = /MicroMessenger|QQ\/|WeiBo|DingTalk|AlipayClient/i.test(navigator.userAgent);
 const IS_WECHAT = /MicroMessenger/i.test(navigator.userAgent);
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 type LockableOrientation = ScreenOrientation & { lock?: (o: 'landscape') => Promise<void> };
 
@@ -30,7 +32,7 @@ async function goLandscape(): Promise<boolean> {
 export function RotateHint() {
   // 只在打开页面时判断一次
   const [open, setOpen] = useState(() => window.matchMedia(PORTRAIT_PHONE).matches);
-  const [manual, setManual] = useState(IN_APP);
+  const [manual, setManual] = useState(IN_APP || IOS);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -66,14 +68,14 @@ export function RotateHint() {
               : '当前浏览器不支持自动切换（如 iPhone Safari），请关闭手机的“竖排方向锁定”，然后把手机横过来。'}
           </p>
         )}
-        {IN_APP ? (
+        {IN_APP || IOS ? (
           <button className="btn btn-yellow btn-big" onClick={() => setOpen(false)}>知道了</button>
         ) : (
           <button className="btn btn-yellow btn-big" onClick={rotate} disabled={busy}>
             {manual ? '再试一次' : '切换横屏'}
           </button>
         )}
-        {!IN_APP && <button className="rotate-skip" onClick={() => setOpen(false)}>继续竖屏玩</button>}
+        {!(IN_APP || IOS) && <button className="rotate-skip" onClick={() => setOpen(false)}>继续竖屏玩</button>}
       </div>
     </div>
   );

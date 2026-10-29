@@ -1,13 +1,14 @@
 /** 选决斗场：在开始游戏 / 单人 / 多人之后弹出。 */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { startBgm } from '../game/audio';
 import { MAPS, MAP_IDS } from '../game/maps';
 import type { MapId } from '../game/types';
 import { useApp } from '../state/AppState';
 import { Modal } from './Modal';
 
 const BLURB: Record<MapId, string> = {
-  candy: '马卡龙地砖、棒棒糖与棉花糖浮岛，明亮活泼。',
-  volcano: '熔岩地砖、侧后方火山喷烟与熔岩河，对战氛围更热。',
+  candy: '马卡龙地砖、棒棒糖与棉花糖浮岛。音乐轻快明亮。',
+  volcano: '熔岩地砖、侧后方火山喷烟与熔岩河。音乐更热血。',
 };
 
 export type MapPickNext = 'match' | 'practice' | 'multi';
@@ -23,11 +24,12 @@ export function MapPickModal({
 }) {
   const { state } = useApp();
   const [pick, setPick] = useState<MapId>(state.mapId);
+  useEffect(() => { startBgm(pick); }, [pick]);
   const title = next === 'practice' ? '单人练习 · 选地图' : next === 'multi' ? '多人对战 · 选地图' : '开始游戏 · 选地图';
 
   return (
     <Modal title={title} onClose={onClose}>
-      <p className="muted">选好决斗场再继续。地图只影响外观，玩法规则相同。</p>
+      <p className="muted">选好决斗场再继续。每张地图有自己的背景音乐，玩法规则相同。</p>
       <div className="map-pick-grid">
         {MAP_IDS.map((id) => (
           <button

@@ -33,6 +33,8 @@ export function saveSkin(id: string): void {
 }
 
 const NAME_KEY = 'jelly-brawl.name';
+let nameVersion = 0;
+const nameListeners = new Set<() => void>();
 
 /** 联机昵称；第一次随机一个 */
 export function loadName(): string {
@@ -51,6 +53,17 @@ export function saveName(name: string): void {
   } catch {
     // 忽略
   }
+  nameVersion += 1;
+  nameListeners.forEach((fn) => fn());
+}
+
+export function subscribeName(fn: () => void): () => void {
+  nameListeners.add(fn);
+  return () => nameListeners.delete(fn);
+}
+
+export function nameStoreVersion(): number {
+  return nameVersion;
 }
 
 /** 还没有昵称时，用邮箱前缀当联机名字 */
@@ -77,6 +90,25 @@ export function hasLoadedBefore(): boolean {
 export function markLoaded(): void {
   try {
     localStorage.setItem(LOADED_KEY, '1');
+  } catch {
+    // 忽略
+  }
+}
+
+const TUTORIAL_KEY = 'jelly-brawl.tutorial-done';
+
+/** 是否已完成（或跳过）过新手引导局 */
+export function hasDoneTutorial(): boolean {
+  try {
+    return localStorage.getItem(TUTORIAL_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function markTutorialDone(): void {
+  try {
+    localStorage.setItem(TUTORIAL_KEY, '1');
   } catch {
     // 忽略
   }

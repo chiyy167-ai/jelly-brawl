@@ -5,6 +5,7 @@ import { EmoteKit, type EmoteKind } from './emotes';
 import { addEmote, GROUND, headHeight, jump, makeActor, S, updateActor, type Actor } from './loadingActor';
 import { makeRng, type Rng } from './rng';
 import { addLights } from './stage';
+import { makeRenderer, renderIfOk } from './webgl';
 
 // 坐标单位 = 启动插画上的像素（插画 1024×576），世界 y = -插画 y；和 CSS 的 .loading-stage 一致
 const REGION = { x0: 200, x1: 774, y0: 270, y1: 530 };
@@ -16,7 +17,7 @@ const RED_LINES = ['嘿嘿～', '好痒！', '别戳我啦！', '我在努力加
 const CHEER_LINES = ['冲呀！', '加油加油！', '马上就好～'];
 
 export class LoadingJellies {
-  private renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  private renderer = makeRenderer();
   private scene = new THREE.Scene();
   private camera = new THREE.OrthographicCamera(REGION.x0, REGION.x1, -REGION.y0, -REGION.y1, -1000, 1000);
   private kit = new EmoteKit();
@@ -46,10 +47,6 @@ export class LoadingJellies {
   private rect = new DOMRect();
 
   constructor(private host: HTMLElement, private bubble: HTMLElement, private tpl: JellyTemplate) {
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    // 插画颜色很亮，小果冻提亮一些才不会显得发暗
     this.renderer.toneMappingExposure = 1.4;
     host.prepend(this.renderer.domElement);
     this.camera.position.z = 500;
@@ -247,12 +244,12 @@ export class LoadingJellies {
     updateActor(this.red, this.kit, this.tpl, this.time, dt);
     updateActor(this.blue, this.kit, this.tpl, this.time, dt);
     this.updateBubble();
-    this.renderer.render(this.scene, this.camera);
+    renderIfOk(this.renderer, this.scene, this.camera);
   };
 
   private resize(): void {
     this.rect = this.host.getBoundingClientRect();
-    this.renderer.setSize(this.host.clientWidth || 1, this.host.clientHeight || 1, false);
+    this.renderer.setSize(Math.max(2, this.host.clientWidth), Math.max(2, this.host.clientHeight), false);
     this.bubbleW = this.bubble.offsetWidth;
   }
 

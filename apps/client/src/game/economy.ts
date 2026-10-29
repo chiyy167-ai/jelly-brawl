@@ -7,9 +7,10 @@ export function computeRewards(mode: GameMode, me: RankEntry): MatchResult['rewa
   const i = Math.max(0, me.rank - 1);
   let xp = (e.placeXp[i] ?? 10) + e.joinXp + me.kos * e.kosXp;
   let coins = (e.placeCoins[i] ?? 5) + me.kos * e.kosCoins;
-  let gems = me.rank === 1 ? (mode === 'practice' ? e.practiceWinGems : e.winGems) : 0;
+  const casual = mode === 'practice' || mode === 'tutorial';
+  let gems = me.rank === 1 ? (casual ? e.practiceWinGems : e.winGems) : 0;
   if (mode === 'online') xp += e.onlineBonusXp;
-  if (mode === 'practice') {
+  if (casual) {
     xp = Math.round(xp * e.practiceScale);
     coins = Math.round(coins * e.practiceScale);
   }

@@ -1,7 +1,7 @@
 /** 根组件：只负责按当前页面状态切换页面，外加全局的横屏提示和联机事件。 */
 import { useEffect } from 'react';
 import { RotateHint } from './components/RotateHint';
-import { unlockAudio } from './game/audio';
+import { startBgm, unlockAudio } from './game/audio';
 import { session } from './net/session';
 import { AuthPage } from './pages/AuthPage';
 import { BattlePage } from './pages/BattlePage';
@@ -13,6 +13,7 @@ import { SkinPage } from './pages/SkinPage';
 import { auth } from './state/auth';
 import { AppProvider, useApp } from './state/AppState';
 import { syncHistoryAfterLogin } from './state/cloudHistory';
+import { syncProfileAfterLogin } from './state/profile';
 
 function Pages() {
   const { state } = useApp();
@@ -48,7 +49,7 @@ function NetBridge() {
   return null;
 }
 
-/** 登录成功后把本机战绩补传到云端（邮箱验证跳转回来时也会触发） */
+/** 登录成功后同步战绩与昵称（邮箱验证 / Google 回调回来时也会触发） */
 function AuthBridge() {
   useEffect(() => {
     let last = '';
@@ -57,6 +58,7 @@ function AuthBridge() {
       if (id && id !== last) {
         last = id;
         void syncHistoryAfterLogin();
+        void syncProfileAfterLogin();
       }
       if (!id) last = '';
     });
@@ -69,6 +71,7 @@ function AudioUnlock() {
   useEffect(() => {
     const once = () => {
       unlockAudio();
+      startBgm();
       window.removeEventListener('pointerdown', once);
       window.removeEventListener('keydown', once);
     };
@@ -82,6 +85,37 @@ function AudioUnlock() {
   return null;
 }
 
+/** iPhone 横屏时地址栏会改可视高度，按 visualViewport 撑满，避免页面被撑出屏幕后报错 */
+function FitScreen() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const apple = /iP(hone|ad|od)/.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (apple) root.classList.add('ios');
+    const fit = () => {
+      const vv = window.visualViewport;
+      const h = Math.round(vv?.height ?? window.innerHeight);
+      const top = Math.round(vv?.offsetTop ?? 0);
+      const next = `${h}px`;
+      const nextTop = `${top}px`;
+      if (root.style.getPropertyValue('--app-h') === next && root.style.getPropertyValue('--app-top') === nextTop) return;
+      root.style.setProperty('--app-h', next);
+      root.style.setProperty('--app-top', nextTop);
+      window.dispatchEvent(new Event('resize'));
+    };
+    fit();
+    window.visualViewport?.addEventListener('resize', fit);
+    window.visualViewport?.addEventListener('scroll', fit);
+    window.addEventListener('orientationchange', fit);
+    return () => {
+      window.visualViewport?.removeEventListener('resize', fit);
+      window.visualViewport?.removeEventListener('scroll', fit);
+      window.removeEventListener('orientationchange', fit);
+    };
+  }, []);
+  return null;
+}
+
 export default function App() {
   return (
     <AppProvider>
@@ -89,6 +123,7 @@ export default function App() {
       <NetBridge />
       <AuthBridge />
       <AudioUnlock />
+      <FitScreen />
       <RotateHint />
     </AppProvider>
   );

@@ -1,30 +1,36 @@
 /** 大厅弹窗：联机、战绩、每日奖励、教程、设置、商城。 */
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { GAME } from '../game/config';
-import { RARITY_LABEL } from '../data/skins';
-import { isBgmMuted, isMuted, setBgmMuted, setMuted, unlockAudio } from '../game/audio';
+import { isBgmMuted, isMuted, setBgmMuted, setMuted, sfx, unlockAudio } from '../game/audio';
 import { currentAccount, logoutAccount } from '../state/account';
 import { auth } from '../state/auth';
 import { useApp } from '../state/AppState';
 import { fetchCloudHistory } from '../state/cloudHistory';
 import {
-  canClaimDaily, claimDaily, exchangeGem, loadProgress, progressVersion, subscribeProgress,
+  canClaimDaily, claimDaily, loadProgress, progressVersion, subscribeProgress,
 } from '../state/progress';
 import { loadHistory, type HistoryEntry } from '../state/storage';
 import { AuthPanel } from './AuthPanel';
+import { ItemsGuideModal, ShopModal } from './ItemShopModals';
 import { Modal } from './Modal';
 import { MultiModal } from './MultiModal';
 
 export type LobbyModal = 'multi' | 'rank' | 'daily' | 'tutorial' | 'items' | 'settings' | 'shop' | null;
 
-const MODE_LABEL = { practice: '练习', match: '对战', online: '联机' } as const;
-const ITEM_GUIDE_URL = `${import.meta.env.BASE_URL}images/item-guide.jpg`;
+const MODE_LABEL = { practice: '练习', match: '对战', online: '联机', tutorial: '教程' } as const;
 
-export function LobbyModals({ which, onClose, roomCode }: { which: LobbyModal; onClose(): void; roomCode?: string }) {
+export function LobbyModals({
+  which, onClose, roomCode, onStartTutorial,
+}: {
+  which: LobbyModal;
+  onClose(): void;
+  roomCode?: string;
+  onStartTutorial?(): void;
+}) {
   if (which === 'multi') return <MultiModal onClose={onClose} initialCode={roomCode} />;
   if (which === 'rank') return <RankModal onClose={onClose} />;
   if (which === 'daily') return <DailyModal onClose={onClose} />;
-  if (which === 'tutorial') return <TutorialModal onClose={onClose} />;
+  if (which === 'tutorial') return <TutorialModal onClose={onClose} onStart={onStartTutorial} />;
   if (which === 'items') return <ItemsGuideModal onClose={onClose} />;
   if (which === 'settings') return <SettingsModal onClose={onClose} />;
   if (which === 'shop') return <ShopModal onClose={onClose} />;
@@ -36,6 +42,12 @@ function SettingsModal({ onClose }: { onClose(): void }) {
   const email = currentAccount();
   const [sfxOff, setSfxOff] = useState(isMuted);
   const [bgmOff, setBgmOff] = useState(isBgmMuted);
+  // 打开设置时响一声，方便确认音量
+  useEffect(() => {
+    if (isMuted()) return;
+    unlockAudio();
+    sfx.go();
+  }, []);
   return (
     <Modal title="设置" onClose={onClose}>
       <h3 className="auth-title">声音</h3>
@@ -85,6 +97,11 @@ function SettingsModal({ onClose }: { onClose(): void }) {
       )}
       <AuthPanel />
       <hr className="auth-hr" />
+      <p className="legal-links">
+        <a href={`${import.meta.env.BASE_URL}privacy.html`}>隐私政策</a>
+        <span>·</span>
+        <a href={`${import.meta.env.BASE_URL}terms.html`}>使用条款</a>
+      </p>
       <p className="muted">版本：网页版 0.4（音效 + 对撞手感调整）</p>
     </Modal>
   );
@@ -175,62 +192,27 @@ function DailyModal({ onClose }: { onClose(): void }) {
   );
 }
 
-function ShopModal({ onClose }: { onClose(): void }) {
-  useSyncExternalStore(subscribeProgress, progressVersion, progressVersion);
-  const p = loadProgress();
-  const cost = GAME.economy.gemCostCoins;
-  const [msg, setMsg] = useState('');
-  return (
-    <Modal title="商城" onClose={onClose}>
-      <p className="muted">当前：{p.coins} 金币 · {p.gems} 宝石</p>
-      <p className="pending-note">皮肤仍可全部免费试用。暂无真实支付；可用金币兑换宝石。</p>
-      <button
-        className="btn btn-blue"
-        disabled={p.coins < cost}
-        onClick={() => {
-          const next = exchangeGem();
-          setMsg(next ? `兑换成功：-${cost} 金币，+1 宝石` : '金币不足');
-        }}
-      >
-        {cost} 金币 → 1 宝石
-      </button>
-      {msg && <p className="muted">{msg}</p>}
-    </Modal>
-  );
-}
-
-function TutorialModal({ onClose }: { onClose(): void }) {
-  const steps = [
-    { t: '移动与冲撞', d: '摇杆移动；按住右下拳头蓄力，松手冲刺。' },
-    { t: '变大变小', d: '吃黄块升级；被重击降级并掉块。' },
-    { t: '缩圈', d: '15 秒后每 8 秒缩小，掉出平台即淘汰。' },
-    { t: '神秘道具箱', d: '场上会掉金色道具箱，捡起随机开出火箭、护盾、跳板、地雷等。详见「道具图鉴」。' },
-    { t: '幽灵布丁', d: '淘汰后变幽灵，冷却好后按冲在摇杆方向放布丁挡路。' },
-    { t: '三局赛', d: '正式对战与联机打满 3 局累计分，并列加赛。练习只打 1 局。' },
-    { t: '成长', d: '结算得 XP / 金币 / 宝石；大厅可领每日奖励，商城可用金币换宝石。' },
-  ];
+function TutorialModal({ onClose, onStart }: { onClose(): void; onStart?(): void }) {
   return (
     <Modal title="新手教程" onClose={onClose}>
+      <p className="muted">大约 1 分钟的引导对局：只有 1 个很乖的电脑靶子，没有道具和随机事件。</p>
       <ol className="tutorial">
-        {steps.map((s) => (
-          <li key={s.t}>
-            <b>{s.t}</b>
-            <span>{s.d}</span>
-          </li>
-        ))}
+        <li><b>移动</b><span>摇杆或 WASD</span></li>
+        <li><b>变大</b><span>吃掉场上的果冻块</span></li>
+        <li><b>冲撞</b><span>按住拳头蓄力，松手冲出去</span></li>
+        <li><b>缩圈</b><span>站在红圈内，别掉下去</span></li>
       </ol>
-      <p className="muted">皮肤稀有度：{Object.values(RARITY_LABEL).join(' / ')}（仅外观）</p>
-    </Modal>
-  );
-}
-
-function ItemsGuideModal({ onClose }: { onClose(): void }) {
-  return (
-    <Modal title="道具图鉴" onClose={onClose}>
-      <p className="muted">场上只掉神秘道具箱；开箱后随机获得下列道具之一。</p>
-      <div className="item-guide">
-        <img src={ITEM_GUIDE_URL} alt="果冻擂台道具设计图：神秘箱与各类道具效果说明" />
-      </div>
+      <p className="muted">正式对战里还有神秘道具箱、幽灵布丁、三局赛等，引导里先不打扰你。</p>
+      <button
+        type="button"
+        className="btn btn-yellow btn-big"
+        onClick={() => {
+          onClose();
+          onStart?.();
+        }}
+      >
+        开始引导对局
+      </button>
     </Modal>
   );
 }

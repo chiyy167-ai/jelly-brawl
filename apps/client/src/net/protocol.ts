@@ -1,10 +1,11 @@
 /** 联机协议：客户端和服务器共用。服务器跑物理，客户端只发输入、收快照。 */
+import { cleanLook, type CosmeticLook } from '../data/cosmetics';
 import { SKINS } from '../data/skins';
+import { hazardKindFromIndex, hazardKindIndex, ITEM_KINDS } from '../game/items';
 import { applyLevel } from '../game/physics';
 import type { RosterSeat } from '../game/sim';
-import { hazardKindFromIndex, hazardKindIndex, ITEM_KINDS } from '../game/items';
 import type {
-  Candy, FxEvent, Hazard, MapId, MatchPhase, MatchResult, MatchState, Pudding, ScheduledEvent,
+  Candy, FxEvent, Hazard, ItemKind, MapId, MatchPhase, MatchResult, MatchState, Pudding, ScheduledEvent,
 } from '../game/types';
 
 export const ROOM_NAME = 'jelly';
@@ -14,6 +15,9 @@ export const CODE_LENGTH = 4;
 export interface Profile {
   name: string;
   skinId: string;
+  /** 开局携带；仅系列赛第一局生效 */
+  startItem?: ItemKind | null;
+  look?: CosmeticLook | null;
 }
 
 export interface LobbyInfo {
@@ -62,7 +66,12 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 export function cleanProfile(p: Partial<Profile> | undefined): Profile {
   const name = String(p?.name ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 10) || '果冻玩家';
   const skinId = SKINS.some((s) => s.id === p?.skinId) ? String(p?.skinId) : SKINS[0].id;
-  return { name, skinId };
+  const raw = p?.startItem;
+  const startItem = typeof raw === 'string' && ITEM_KINDS.includes(raw as ItemKind)
+    ? (raw as ItemKind)
+    : null;
+  const look = cleanLook(p?.look ?? null);
+  return { name, skinId, startItem, look };
 }
 
 function packEvents(list: ScheduledEvent[]): number[] {

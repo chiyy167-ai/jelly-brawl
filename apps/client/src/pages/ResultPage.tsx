@@ -51,7 +51,7 @@ export function ResultPage() {
       <SkyBackground />
       <span className="tag-title result-tag">
         {won ? '胜利结算' : '对局结算'}
-        {r.mode === 'practice' ? ' · 练习' : r.mode === 'online' ? ' · 联机' : ' · 三局赛'}
+        {r.mode === 'tutorial' ? ' · 新手教程' : r.mode === 'practice' ? ' · 练习' : r.mode === 'online' ? ' · 联机' : ' · 三局赛'}
         {r.roundsPlayed ? ` · ${r.roundsPlayed} 局` : ''}
       </span>
       <div className="result-main">

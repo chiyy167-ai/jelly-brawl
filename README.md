@@ -69,20 +69,24 @@ GitHub 仓库 → Settings → Secrets and variables → Actions → Variables �
 ### 3. 账号与云端战绩（Supabase，免费）
 
 1. 打开 [supabase.com](https://supabase.com) 用 GitHub 登录，New project，选免费档，记住数据库密码。
-2. 项目建好后：左栏 **SQL Editor** → New query，把仓库里 [`supabase/schema.sql`](supabase/schema.sql) 全文粘贴进去 → Run。
-3. **Authentication → Providers → Email** 保持开启。开发阶段可在 **Authentication → Providers → Email** 里关掉 **Confirm email**，这样注册后马上能登录（正式上线建议再打开验证）。
+2. 项目建好后：左栏 **SQL Editor** → New query，把仓库里 [`supabase/schema.sql`](supabase/schema.sql) 全文粘贴进去 → Run（含 `match_history` 与 `profiles` 昵称表）。
+3. **Authentication → Providers → Email** 保持开启。开发阶段可关掉 **Confirm email**，注册后马上能登录（正式上线建议再打开验证）。
 4. **Authentication → URL Configuration**：
    - Site URL 填 `https://<用户名>.github.io/jelly-brawl/`
-   - Redirect URLs 加上同一地址，以及本地调试用的 `http://127.0.0.1:5174/**`
-5. **Project Settings → API** 复制：
+   - Redirect URLs 加上同一地址，以及本地 `http://127.0.0.1:5174/**`、`http://localhost:5174/**`
+5. （可选）**Gmail / Google 一键登录**：
+   - [Google Cloud Console](https://console.cloud.google.com/) → 建项目 → **APIs & Services → Credentials → Create OAuth client ID**（Web application）
+   - Authorized redirect URI 填：`https://<你的项目 ref>.supabase.co/auth/v1/callback`（在 Supabase **Project Settings → API** 的 Project URL 后面拼 `/auth/v1/callback`）
+   - 把 Client ID / Secret 填进 Supabase：**Authentication → Sign In / Providers → Google** → Enable，粘贴后 Save
+6. **Project Settings → API** 复制：
    - Project URL → 仓库 Variables：`VITE_SUPABASE_URL`
    - `anon` `public` key → 仓库 Variables：`VITE_SUPABASE_ANON_KEY`  
    （不要把 `service_role` 密钥写进前端或仓库。）
-6. 重新跑一遍 GitHub Actions「Deploy GitHub Pages」。
+7. 重新跑一遍 GitHub Actions「Deploy GitHub Pages」。
 
 本地调试：复制 `apps/client/.env.example` 为 `.env.local` 填入同上两项，再 `npm run dev`。
 
-游戏里：大厅右上角 **设置** → 注册 / 登录。打完一局后战绩写入云端；「排行榜」里可看自己的最近战绩（仍不是全服排行榜）。
+游戏里：大厅右上角 **设置** → Google 一键登录 / 邮箱注册登录 / 找回密码；登录后可改 **游戏名字**（大厅与联机显示）。打完一局后战绩写入云端；「排行榜」里可看自己的最近战绩（仍不是全服排行榜）。
 
 ### 4. 网页（GitHub Pages）
 
