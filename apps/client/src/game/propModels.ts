@@ -5,19 +5,20 @@ import type { HazardKind, ItemKind } from './types';
 
 export type PropId = 'box' | ItemKind;
 
+/** 运行时只从 models/items 读取。电池和药水在同目录，当前对局不用。 */
 const FILES: Record<PropId, string> = {
-  box: '01_mystery_crate.glb',
-  rocket: '02_dash_rocket.glb',
-  shield: '03_shield_bubble.glb',
-  pad: '04_jump_pad.glb',
-  grow: '05_growth_cube.glb',
-  magnet: '06_magnet.glb',
-  banana: '07_banana_peel.glb',
-  mine: '08_spike_mine.glb',
-  snow: '09_freeze_snowball.glb',
-  star: '10_energy_star.glb',
-  glove: '11_boxing_glove.glb',
-  cake: '12_recovery_cake.glb',
+  box: 'mystery_crate.glb',
+  rocket: 'dash_rocket.glb',
+  shield: 'shield_bubble.glb',
+  pad: 'jump_pad.glb',
+  grow: 'growth_cube.glb',
+  magnet: 'magnet.glb',
+  banana: 'banana_peel.glb',
+  mine: 'spike_mine.glb',
+  snow: 'freeze_snowball.glb',
+  star: 'energy_star.glb',
+  glove: 'boxing_glove.glb',
+  cake: 'recovery_cake.glb',
 };
 
 /**
@@ -52,7 +53,7 @@ const templates = new Map<PropId, THREE.Object3D>();
 let pending: Promise<void> | null = null;
 
 function propUrl(file: string): string {
-  return `${import.meta.env.BASE_URL}models/props/${file}`;
+  return `${import.meta.env.BASE_URL}models/items/${file}`;
 }
 
 function freshenMaterial(src: THREE.Material): THREE.Material {

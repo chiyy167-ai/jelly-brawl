@@ -53,6 +53,16 @@ export function saveName(name: string): void {
   }
 }
 
+/** 还没有昵称时，用邮箱前缀当联机名字 */
+export function saveNameIfEmpty(name: string): void {
+  try {
+    if (localStorage.getItem(NAME_KEY)) return;
+    if (name) localStorage.setItem(NAME_KEY, name);
+  } catch {
+    // 忽略
+  }
+}
+
 const LOADED_KEY = 'jelly-brawl.loaded';
 
 /** 这台设备以前是否完整加载过一次（用来决定要不要提示"首次加载较慢"） */

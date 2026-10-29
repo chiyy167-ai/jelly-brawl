@@ -5,7 +5,7 @@ import { pushMatchResult } from './cloudHistory';
 import { applyMatchRewards } from './progress';
 import { addHistory, loadSkin, saveSkin } from './storage';
 
-export type Page = 'loading' | 'lobby' | 'battle' | 'skins' | 'result' | 'room';
+export type Page = 'loading' | 'auth' | 'lobby' | 'battle' | 'skins' | 'result' | 'room';
 
 export interface AppState {
   page: Page;
@@ -22,6 +22,7 @@ export interface AppState {
 
 export type Action =
   | { type: 'loaded' }
+  | { type: 'needAuth' }
   | { type: 'goLobby'; notice?: string }
   | { type: 'startBattle'; mode: GameMode }
   | { type: 'setMap'; mapId: MapId }
@@ -37,6 +38,8 @@ function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'loaded':
       return { ...state, page: 'lobby' };
+    case 'needAuth':
+      return { ...state, page: 'auth' };
     case 'goLobby':
       return { ...state, page: 'lobby', notice: action.notice ?? '' };
     case 'startBattle':

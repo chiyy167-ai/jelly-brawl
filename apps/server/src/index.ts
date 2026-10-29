@@ -2,12 +2,15 @@
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { ROOM_NAME } from '../../client/src/net/protocol';
+import { attachAccounts } from './accounts';
 import { JellyRoom } from './JellyRoom';
 import { onlineNow } from './online';
 
 const port = Number(process.env.PORT) || 2567;
 const transport = new WebSocketTransport({ pingInterval: 5000, pingMaxRetries: 3 });
-transport.getExpressApp().get('/online', (_req, res) => {
+const app = transport.getExpressApp();
+attachAccounts(app);
+app.get('/online', (_req: unknown, res: { setHeader(name: string, value: string): void; json(body: unknown): void }) => {
   res.setHeader('cache-control', 'no-store');
   res.json({ n: onlineNow() });
 });

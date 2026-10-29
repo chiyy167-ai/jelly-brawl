@@ -7,3 +7,5 @@ dist/
 jelly_brawl_page_assets.zip
 jelly_brawl_props_glb.zip
 _props_extract/
+# 联机服务器上的账号库（含密码哈希）
+apps/server/data/

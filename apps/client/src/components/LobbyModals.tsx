@@ -3,7 +3,9 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { GAME } from '../game/config';
 import { RARITY_LABEL } from '../data/skins';
 import { isBgmMuted, isMuted, setBgmMuted, setMuted, unlockAudio } from '../game/audio';
+import { currentAccount, logoutAccount } from '../state/account';
 import { auth } from '../state/auth';
+import { useApp } from '../state/AppState';
 import { fetchCloudHistory } from '../state/cloudHistory';
 import {
   canClaimDaily, claimDaily, exchangeGem, loadProgress, progressVersion, subscribeProgress,
@@ -30,6 +32,8 @@ export function LobbyModals({ which, onClose, roomCode }: { which: LobbyModal; o
 }
 
 function SettingsModal({ onClose }: { onClose(): void }) {
+  const { dispatch } = useApp();
+  const email = currentAccount();
   const [sfxOff, setSfxOff] = useState(isMuted);
   const [bgmOff, setBgmOff] = useState(isBgmMuted);
   return (
@@ -64,6 +68,21 @@ function SettingsModal({ onClose }: { onClose(): void }) {
       <p className="muted">音效用手机扬声器实时合成，不额外下载音频文件。</p>
       <hr className="auth-hr" />
       <h3 className="auth-title">账号</h3>
+      {email && (
+        <>
+          <p className="auth-email">本机已登录：<b>{email}</b></p>
+          <button
+            className="btn btn-gray"
+            onClick={() => {
+              logoutAccount();
+              onClose();
+              dispatch({ type: 'needAuth' });
+            }}
+          >
+            退出登录
+          </button>
+        </>
+      )}
       <AuthPanel />
       <hr className="auth-hr" />
       <p className="muted">版本：网页版 0.4（音效 + 对撞手感调整）</p>

@@ -1,0 +1,81 @@
+/* 登录注册门：横屏卡片，矮屏时标题和表单并排 */
+
+.auth-page { display: grid; place-items: center; }
+.auth-wrap {
+  position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px;
+  width: min(420px, calc(100% - 28px)); max-height: calc(100dvh - 20px);
+}
+.auth-wrap .logo-jelly { width: clamp(56px, 10vw, 84px); }
+.auth-wrap .logo-en { font-size: clamp(28px, 6vw, 52px); }
+.auth-wrap .logo-en em { -webkit-text-stroke-width: 3px; }
+.auth-wrap .logo-cn { font-size: clamp(15px, 2.6vw, 22px); }
+.auth-card {
+  width: 100%; display: flex; flex-direction: column; gap: 10px; padding: 16px 16px 14px;
+  border-radius: 28px; background: rgba(255, 255, 255, 0.94); color: #23306b;
+  border: 4px solid #fff; box-shadow: 0 10px 0 rgba(40, 90, 180, 0.18), 0 18px 40px rgba(20, 60, 140, 0.28);
+}
+.auth-hello { margin: 0; text-align: center; font-weight: 900; font-size: 16px; color: #ff6f9d; }
+.auth-card .auth-tabs button { color: #5b6799; }
+.auth-card .field input { width: 100%; background: #fff; user-select: text; -webkit-user-select: text; }
+.auth-pw { position: relative; display: block; }
+.auth-pw input { padding-right: 64px; }
+.auth-eye {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  height: 32px; padding: 0 10px; border-radius: 10px; background: #ffe6f1; color: #c43b72; font-size: 13px; font-weight: 900;
+}
+.auth-tip { margin: 0; font-size: 12px; line-height: 1.4; color: #6a77a8; text-align: center; }
+.auth-error { margin: 0; padding: 8px 10px; border-radius: 12px; background: #ffe3e8; color: #b3122a; font-size: 13px; font-weight: 700; }
+.auth-go { width: 100%; }
+
+.gift-mask {
+  position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; padding: 16px;
+  background: rgba(18, 32, 90, 0.45);
+}
+.gift-card {
+  width: min(360px, 100%); display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 22px 18px 16px; border-radius: 28px; text-align: center; color: #7a3b00;
+  background: linear-gradient(180deg, #fffdf4, #fff3c4); border: 4px solid #ffe08a;
+  box-shadow: 0 12px 0 rgba(200, 120, 0, 0.25); animation: pop 0.28s ease-out;
+}
+.gift-card h2 { margin: 4px 0 0; font-size: 28px; color: #ff6f9d; }
+.gift-coin { margin: 0; font-size: 64px; line-height: 1; font-weight: 900; color: #e38b00; }
+.gift-card p:last-of-type { margin: 0 0 8px; font-weight: 700; }
+
+.auth-jelly {
+  position: absolute; z-index: 1; width: 74px; height: 78px; pointer-events: none;
+  border-radius: 50% 50% 46% 46%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85) 0 7px, transparent 8px),
+    linear-gradient(180deg, #ffd0ea, #ff7eb6);
+  box-shadow: inset -8px -10px 0 rgba(180, 40, 90, 0.18), 0 8px 0 rgba(180, 40, 90, 0.12);
+  animation: bob 4.2s ease-in-out infinite;
+}
+.auth-jelly::before, .auth-jelly::after {
+  content: ''; position: absolute; top: 42%; width: 8px; height: 10px; border-radius: 50%; background: #4a2458;
+}
+.auth-jelly::before { left: 26%; }
+.auth-jelly::after { right: 26%; }
+.auth-jelly-a { left: max(16px, calc(50% - 310px)); top: 18%; background:
+  radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85) 0 7px, transparent 8px),
+  linear-gradient(180deg, #fff3a0, #ffc21f); }
+.auth-jelly-b { right: max(16px, calc(50% - 320px)); top: 22%; animation-delay: -1.4s; }
+.auth-jelly-c { left: max(28px, calc(50% - 280px)); bottom: 10%; width: 56px; height: 60px; animation-delay: -0.7s; background:
+  radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85) 0 6px, transparent 7px),
+  linear-gradient(180deg, #c8f5a0, #5dce55); }
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .auth-wrap { flex-direction: row; width: min(820px, calc(100% - 24px)); gap: 16px; align-items: center; }
+  .auth-wrap .logo { flex: 0 0 auto; }
+  .auth-card { flex: 1; gap: 6px; padding: 12px 14px; }
+  .auth-hello { font-size: 14px; }
+  .auth-card .field input, .auth-go { min-height: 40px; height: 40px; }
+  .auth-go { font-size: 18px; }
+  .auth-jelly-c { display: none; }
+}
+
+@media (orientation: portrait) {
+  .auth-wrap { width: min(420px, calc(100% - 24px)); }
+  .auth-jelly-a { left: 8px; top: 8%; }
+  .auth-jelly-b { right: 8px; top: 12%; }
+  .auth-jelly-c { display: none; }
+}

@@ -19,7 +19,7 @@ export function AuthPanel() {
   if (!supabaseConfigured) {
     return (
       <div className="auth-panel">
-        <p className="pending-note">账号服务尚未配置。在仓库 Variables 里设置 VITE_SUPABASE_URL 和 VITE_SUPABASE_ANON_KEY 后重新发布即可。</p>
+        <p className="pending-note">换手机看战绩还没接上。现在的邮箱登录保存在这台浏览器里。</p>
       </div>
     );
   }

@@ -72,6 +72,8 @@ export const GAME = {
     practiceWinGems: 1,
     dailyCoins: 40,
     dailyGems: 1,
+    /** 第一次用这个邮箱登录时赠送的金币 */
+    newUserCoins: 500,
     gemCostCoins: 100,
   },
 };

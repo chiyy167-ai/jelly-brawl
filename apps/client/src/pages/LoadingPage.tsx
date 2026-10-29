@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import bgUrl from '../assets/loading-bg.jpg';
 import { loadAssets, loadPreviewJelly, type JellyTemplate, type LoadProgress } from '../game/assets';
 import { LoadingJellies } from '../game/loadingJellies';
+import { currentAccount } from '../state/account';
 import { useApp } from '../state/AppState';
 import { rememberLoadedFiles } from '../state/offlineCache';
 import { hasLoadedBefore, markLoaded } from '../state/storage';
@@ -46,7 +47,9 @@ export function LoadingPage() {
         rememberLoadedFiles();
         setDone(true);
         // 让玩家看一会儿庆祝再进入大厅
-        timer = window.setTimeout(() => dispatch({ type: 'loaded' }), 1100);
+        // 登录过一次就进大厅，否则先看注册 / 登录
+        const next = currentAccount() ? 'loaded' : 'needAuth';
+        timer = window.setTimeout(() => dispatch({ type: next }), 1100);
       })
       .catch((e: Error) => alive && setError(e.message || '加载失败'));
     return () => {

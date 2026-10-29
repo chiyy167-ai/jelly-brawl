@@ -6,6 +6,7 @@ import './styles/base.css';
 import './styles/lobby.css';
 import './styles/battle.css';
 import './styles/pages.css';
+import './styles/auth.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

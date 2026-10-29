@@ -76,6 +76,14 @@ export function addXp(amount: number): Progress {
   return p;
 }
 
+/** 新用户见面礼等一次性加金币 */
+export function addCoins(amount: number): Progress {
+  const p = { ...loadProgress() };
+  p.coins += Math.max(0, Math.floor(amount));
+  save(p);
+  return p;
+}
+
 export function applyMatchRewards(r: MatchResult): Progress {
   const { xp, coins, gems } = r.rewards;
   const p = { ...loadProgress() };

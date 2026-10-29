@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { RotateHint } from './components/RotateHint';
 import { unlockAudio } from './game/audio';
 import { session } from './net/session';
+import { AuthPage } from './pages/AuthPage';
 import { BattlePage } from './pages/BattlePage';
 import { LoadingPage } from './pages/LoadingPage';
 import { LobbyPage } from './pages/LobbyPage';
@@ -18,6 +19,8 @@ function Pages() {
   switch (state.page) {
     case 'loading':
       return <LoadingPage />;
+    case 'auth':
+      return <AuthPage />;
     case 'lobby':
       return <LobbyPage />;
     case 'battle':

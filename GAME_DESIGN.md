@@ -124,12 +124,13 @@
 
 ## 本地测试要不要数据库
 
-不要。单机本地不另起数据库。数据分三层，只有账号上云才用现有的 Supabase。
+对局进度仍不另起数据库。邮箱账号例外：写在联机服务器的账号库 `apps/server/data/accounts.json`，不另装数据库软件。
 
 ### 已经在本机、现在就能测
 
 - **账号等级、经验、金币、宝石、每日奖励**：`localStorage` 键 `jelly-brawl.progress`。大厅上的 Lv 是这个，不是对局里的体型。
-- **皮肤、昵称、本机战绩**：也在本机。配了 Supabase 之后，登录只把战绩同步到云端。
+- **皮肤、昵称、本机战绩**：也在本机。配了 Supabase 之后，设置里的云端登录只把战绩同步到云端。
+- **登录**：只有登录，没有单独注册。邮箱还不存在就自动建号，送 `newUserCoins`（500）金币并弹出欢迎画面；这个邮箱已存在但密码不对，不会再建一个。开发者账号 `admin@jb.com` / `happy123` 在服务器启动时写好，登录不算新用户。会话在 `jelly-brawl.session`，登录过一次下次直接进大厅。等级和之后打出来的金币仍在本机。
 
 ### 只活在一局里、不入库
 
@@ -162,4 +163,4 @@
 
 蓄力红光与蓄力条；重击顿帧、震屏；缩圈预警；事件大字。音效 / 振动后续接入。皮肤只影响外观。
 
-道具外观：`apps/client/public/models/props/*.glb`（神秘箱与开箱道具）。大厅「道具图鉴」展示设计图 `public/images/item-guide.jpg`。
+道具外观集中在 `apps/client/public/models/items/*.glb`，战斗只从这里加载。香蕉皮按参考图重做为 `banana_peel.glb`（高 0.35 m、宽 0.45 m、厚约 0.15 m）。建模脚本和参考图在 `apps/client/item-models/`。大厅「道具图鉴」展示设计图 `public/images/item-guide.jpg`。
