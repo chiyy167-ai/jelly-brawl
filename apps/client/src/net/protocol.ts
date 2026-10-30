@@ -60,7 +60,7 @@ export interface Snap {
 
 export type InputMsg = [number, number, number, number, number];
 
-const JELLY_FIELDS = 25;
+const JELLY_FIELDS = 26;
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
 export function cleanProfile(p: Partial<Profile> | undefined): Profile {
@@ -108,8 +108,8 @@ export function packSnap(s: MatchState): Snap {
       r2(q.x), r2(q.y), r2(q.vx), r2(q.vy), r2(q.facing), q.level, q.alive ? 1 : 0, r2(q.fallY),
       r2(q.charge), q.charging ? 1 : 0, r2(q.dizzy), r2(q.dashT), q.kos, q.eaten,
       r2(q.shield), r2(q.magnet), q.item ? ITEM_KINDS.indexOf(q.item) + 1 : 0, r2(q.ghostCd),
-      r2(q.gloveMul), q.puddings, r2(q.rocket), r2(q.star), r2(q.freezeT), r2(q.airT),
-      q.itemB ? ITEM_KINDS.indexOf(q.itemB) + 1 : 0,
+      r2(q.gloveMul), q.puddings,       r2(q.rocket), r2(q.star), r2(q.freezeT), r2(q.airT),
+      q.itemB ? ITEM_KINDS.indexOf(q.itemB) + 1 : 0, r2(q.slipT),
     );
   }
   const b: number[] = [];
@@ -192,6 +192,7 @@ export function applySnap(s: MatchState, snap: Snap): void {
     q.freezeT = d[22] ?? 0;
     q.airT = d[23] ?? 0;
     q.itemB = d[24] > 0 ? ITEM_KINDS[d[24] - 1] : null;
+    q.slipT = d[25] ?? 0;
   });
 
   s.blobs.forEach((blob, i) => {

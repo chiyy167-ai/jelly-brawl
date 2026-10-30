@@ -3,6 +3,7 @@ import { GAME } from './config';
 import { inHole } from './events';
 import { promoteSpare, scaleInput } from './items';
 import { ITEM_COLORS } from './maps';
+import { dropLevel, shieldClash } from './shieldHit';
 import type { FxEvent, InputCmd, Jelly, MatchState } from './types';
 
 export function applyLevel(j: Jelly): void {
@@ -17,6 +18,11 @@ export function applyLevel(j: Jelly): void {
 /** 根据指令转向、加速、蓄力和松手冲刺。fx 用于冲刺音效。 */
 export function steer(j: Jelly, cmd: InputCmd, dt: number, fx?: FxEvent[]): void {
   if (!j.alive) return;
+  if (j.slipT > 0) {
+    j.charging = false;
+    j.charge = 0;
+    return;
+  }
   if (j.freezeT > 0) {
     j.charging = false;
     j.charge = 0;
@@ -64,6 +70,19 @@ function launch(j: Jelly, fx?: FxEvent[]): void {
 
 /** 摩擦（含冰面倍率）、限速、积分位置。 */
 export function integrate(j: Jelly, dt: number, frictionScale: number): void {
+  if (j.slipT > 0) {
+    j.slipT = Math.max(0, j.slipT - dt);
+    j.x += j.vx * dt;
+    j.y += j.vy * dt;
+    if (j.slipT <= 0) {
+      j.vx *= 0.2;
+      j.vy *= 0.2;
+    }
+    j.dashT = Math.max(0, j.dashT - dt);
+    j.hurtCd = Math.max(0, j.hurtCd - dt);
+    j.dizzy = Math.max(0, j.dizzy - dt);
+    return;
+  }
   const friction = Math.exp(-GAME.physics.friction * frictionScale * dt);
   j.vx *= friction;
   j.vy *= friction;
@@ -90,6 +109,10 @@ export function collideAll(s: MatchState): void {
 function bounce(s: MatchState, a: Jelly, b: Jelly): void {
   // 跳板弹起期间互不碰撞
   if (a.airT > 0 || b.airT > 0) return;
+  if (a.shield > 0 || b.shield > 0) {
+    shieldClash(s, a, b);
+    return;
+  }
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const dist = Math.hypot(dx, dy) || 0.0001;
@@ -123,8 +146,8 @@ function bounce(s: MatchState, a: Jelly, b: Jelly): void {
   if (clash) impulse *= 1.25;
   if (a.star > 0 || b.star > 0) impulse *= GAME.items.star.impactMul;
 
-  const aResist = a.resist * (a.shield > 0 ? 2.2 : 1);
-  const bResist = b.resist * (b.shield > 0 ? 2.2 : 1);
+  const aResist = a.resist;
+  const bResist = b.resist;
   a.vx -= (impulse * nx) / ma / aResist;
   a.vy -= (impulse * ny) / ma / aResist;
   b.vx += (impulse * nx) / mb / bResist;
@@ -153,8 +176,8 @@ function bounce(s: MatchState, a: Jelly, b: Jelly): void {
     b.vy += (fix * ny) / mb;
   }
 
-  applySnow(s, a, b);
-  applySnow(s, b, a);
+  const frozeB = applySnow(s, a, b);
+  const frozeA = applySnow(s, b, a);
 
   if (a.hurtCd > 0 || b.hurtCd > 0) return;
   a.hurtCd = b.hurtCd = clash ? 0.4 : 0.35;
@@ -168,37 +191,38 @@ function bounce(s: MatchState, a: Jelly, b: Jelly): void {
   b.hits += 1;
   const power = Math.abs(impulse) * 0.5 * a.impact * b.impact;
   const heavy = power > GAME.charge.heavyImpact || (clash && (a.dashT > 0 || b.dashT > 0));
-  s.fx.push({ type: 'hit', x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, heavy });
-  if (!heavy) return;
-  s.hitStop = GAME.charge.hitStop;
-  s.shake = GAME.charge.shake * (clash ? 1.15 : 1);
-  shrinkOnHit(s, a);
-  shrinkOnHit(s, b);
+  // 能量星冲刺命中：对方必掉 1 级，不用撞得很重
+  const starA = a.star > 0 && a.dashT > 0;
+  const starB = b.star > 0 && b.dashT > 0;
+  s.fx.push({ type: 'hit', x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, heavy: heavy || starA || starB });
+  if (heavy) {
+    s.hitStop = GAME.charge.hitStop;
+    s.shake = GAME.charge.shake * (clash ? 1.15 : 1);
+  }
+  // 被雪球冻住的这一下只冻不掉血
+  if ((heavy || starB) && !frozeA) shrinkOnHit(s, a);
+  if ((heavy || starA) && !frozeB) shrinkOnHit(s, b);
 }
 
-/** 冰冻雪球：冲刺命中时冻结对方 */
-function applySnow(s: MatchState, attacker: Jelly, victim: Jelly): void {
-  if (attacker.item !== 'snow' || attacker.gloveMul <= 1 || attacker.dashT <= 0) return;
+/** 冰冻雪球：冲刺命中时把对方钉在原地。返回是否冻住了对方。 */
+function applySnow(s: MatchState, attacker: Jelly, victim: Jelly): boolean {
+  if (attacker.item !== 'snow' || attacker.gloveMul <= 1 || attacker.dashT <= 0) return false;
   attacker.item = null;
   attacker.gloveMul = 1;
   promoteSpare(attacker);
   s.fx.push({ type: 'item', x: victim.x, y: victim.y, color: ITEM_COLORS.snow });
   victim.freezeT = GAME.items.snow.freeze;
-  victim.vx *= 0.15;
-  victim.vy *= 0.15;
+  victim.vx = 0;
+  victim.vy = 0;
   victim.charging = false;
   victim.charge = 0;
+  return true;
 }
 
+/** 护盾和能量星期间被撞不掉血 */
 function shrinkOnHit(s: MatchState, j: Jelly): void {
-  if (j.shield > 0 || j.level <= 1) return;
-  j.level -= 1;
-  applyLevel(j);
-  const blob = s.blobs.find((b) => !b.alive);
-  if (!blob) return;
-  blob.alive = true;
-  blob.x = j.x - Math.cos(j.facing) * (j.radius + 0.6);
-  blob.y = j.y - Math.sin(j.facing) * (j.radius + 0.6);
+  if (j.shield > 0 || j.star > 0) return;
+  dropLevel(s, j);
 }
 
 export function eatBlobs(s: MatchState): void {

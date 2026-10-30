@@ -30,7 +30,7 @@ export interface Jelly {
   id: number;
   name: string;
   skinId: string;
-  /** 眼睛 / 嘴巴 / 头饰 */
+  /** 头饰；眼睛和嘴巴用模型原有的，不再另贴 */
   look: JellyLook;
   isPlayer: boolean;
   human: boolean;
@@ -73,6 +73,8 @@ export interface Jelly {
   freezeT: number;
   /** 跳板弹起：短暂离地、不撞人 */
   airT: number;
+  /** 香蕉皮滑行剩余时间，期间不受操作、按固定速度滑 */
+  slipT: number;
   ghostCd: number;
   /** 拳套击退倍率；>1 表示拳套或雪球已释放、等下一次冲刺 */
   gloveMul: number;

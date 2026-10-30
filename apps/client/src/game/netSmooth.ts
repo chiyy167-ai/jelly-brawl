@@ -63,6 +63,7 @@ export function adoptServer(pred: Jelly, server: Jelly): void {
   pred.dizzy = server.dizzy;
   pred.fallY = server.fallY;
   pred.airT = server.airT;
+  pred.slipT = server.slipT;
 }
 
 /** 偏差很大才瞬间对齐。平时只做一点点修正，避免把玩家拉回延迟中的旧位置。 */

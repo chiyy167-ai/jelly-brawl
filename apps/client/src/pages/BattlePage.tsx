@@ -147,7 +147,7 @@ export function BattlePage() {
           <span className="hud-pill">{roundLabel} · 累计 <b>{hud?.seriesScore ?? 0}</b></span>
           <span className="hud-pill"><IconUser size={22} />剩余 <b>{hud?.alive ?? '-'}</b> 人</span>
           <span className="hud-pill hud-level">
-            体型 Lv.{hud?.level ?? 1}
+            血量 Lv.{hud?.level ?? 1}
             {hud?.buff ? ` · ${hud.buff}` : hud?.held ? ` · ${hud.held}` : ''}
           </span>
         </div>

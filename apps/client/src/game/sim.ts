@@ -47,7 +47,7 @@ function makeJelly(
     alive: true, ghosting: false, elimTime: 0, fallY: 0, fallVy: 0,
     lastHitBy: -1, lastHitTime: -99, kos: 0, eaten: 0,
     hits: 0, selfOut: 0, puddings: 0,
-    item: null, itemB: null, shield: 0, magnet: 0, rocket: 0, star: 0, freezeT: 0, airT: 0,
+    item: null, itemB: null, shield: 0, magnet: 0, rocket: 0, star: 0, freezeT: 0, airT: 0, slipT: 0,
     ghostCd: 0, gloveMul: 1, itemHold: 0,
     aiT: 0, aiChargeT: 0, wish: { x: 0, y: 0, charge: false },
   };
@@ -147,6 +147,7 @@ function resetRoundFields(s: MatchState, seed: number): void {
     j.star = 0;
     j.freezeT = 0;
     j.airT = 0;
+    j.slipT = 0;
     j.ghostCd = 0;
     j.gloveMul = 1;
     j.itemHold = 0;

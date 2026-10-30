@@ -65,7 +65,8 @@ export const GAME = {
     glove: { knockMul: 1.85 },
     snow: { freeze: 1.6 },
     pad: { life: 11, radius: 1.45, impulse: 18, air: 0.75, arm: 0.35 },
-    banana: { life: 9, radius: 1.1, slip: 1.2, spin: 15, arm: 0.25 },
+    /** distance 是滑行距离，speed 是滑行速度，时间 = 距离 / 速度 */
+    banana: { life: 9, radius: 1.1, distance: 4.8, speed: 12, arm: 0.25 },
     mine: { life: 12, radius: 1.15, blast: 3.6, force: 18, arm: 0.55 },
   },
   ghost: { puddingRadius: 1.44, puddingMass: 0.9, puddingLife: 8, cooldown: 10, alpha: 0.45 },

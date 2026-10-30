@@ -174,10 +174,12 @@ function triggerPad(s: MatchState, j: Jelly, h: Hazard): void {
 
 function triggerBanana(s: MatchState, j: Jelly, h: Hazard): void {
   const cfg = GAME.items.banana;
-  j.dizzy = Math.max(j.dizzy, cfg.slip);
-  const a = s.rng.next() * Math.PI * 2;
-  j.vx += Math.cos(a) * cfg.spin;
-  j.vy += Math.sin(a) * cfg.spin;
+  const moving = Math.hypot(j.vx, j.vy);
+  const ang = moving > 0.8 ? Math.atan2(j.vy, j.vx) : j.facing;
+  j.vx = Math.cos(ang) * cfg.speed;
+  j.vy = Math.sin(ang) * cfg.speed;
+  j.slipT = cfg.distance / cfg.speed;
+  j.dizzy = Math.max(j.dizzy, 0.35);
   j.charging = false;
   j.charge = 0;
   h.life = 0;

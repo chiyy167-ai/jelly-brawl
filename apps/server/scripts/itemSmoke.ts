@@ -72,7 +72,9 @@ function dash(s: MatchState, holdSteps: number): void {
 
 const sec = (t: number) => Math.round(t / dt);
 
-// 火箭：立刻加速，持续约 2.2 秒
+const near = (v: number, want: number) => Math.abs(v - want) < 0.05;
+
+// 火箭：立刻加速，持续时间按 config
 {
   const plain = quiet();
   run(plain.s, sec(0.6), { x: 1, y: 0, charge: false });
@@ -83,11 +85,11 @@ const sec = (t: number) => Math.round(t / dt);
   const dur = hot.me.rocket;
   run(hot.s, sec(0.6), { x: 1, y: 0, charge: false });
   const gone = Math.hypot(hot.me.x, hot.me.y);
-  say(hot.me.item === null && dur > 2 && dur < 2.3 && gone > base * 1.25, '冲刺火箭', `持续 ${dur.toFixed(2)}s 位移 ${gone.toFixed(2)} > ${base.toFixed(2)}`);
+  say(hot.me.item === null && near(dur, GAME.items.rocket.duration) && gone > base * 1.25, '冲刺火箭', `持续 ${dur.toFixed(2)}s 位移 ${gone.toFixed(2)} > ${base.toFixed(2)}`);
 }
 
-// 护盾：重击不降级，被撞开的速度更小
-function smack(shield: boolean): { level: number; speed: number } {
+// 护盾：被撞不位移，每撞一次掉 1 级血量
+function smack(shield: boolean): { level: number; speed: number; moved: number } {
   const { s, me, foe } = quiet();
   setLevel(me, 2);
   setLevel(foe, 2);
@@ -103,13 +105,17 @@ function smack(shield: boolean): { level: number; speed: number } {
   foe.y = 0;
   foe.vx = -28;
   foe.vy = 0;
-  run(s, 1);
-  return { level: me.level, speed: Math.hypot(me.vx, me.vy) };
+  run(s, 4);
+  return { level: me.level, speed: Math.hypot(me.vx, me.vy), moved: Math.hypot(me.x, me.y) };
 }
 {
   const bare = smack(false);
   const safe = smack(true);
-  say(safe.level === 2 && bare.level === 1 && safe.speed < bare.speed * 0.85, '护盾', `裸 Lv${bare.level} 速 ${bare.speed.toFixed(1)} / 盾 Lv${safe.level} 速 ${safe.speed.toFixed(1)}`);
+  say(
+    safe.level === 1 && safe.moved < 0.2 && safe.speed < 1 && bare.level === 1 && bare.speed > safe.speed + 4,
+    '护盾',
+    `裸 Lv${bare.level} 速 ${bare.speed.toFixed(1)} 位移 ${bare.moved.toFixed(2)} / 盾 Lv${safe.level} 速 ${safe.speed.toFixed(1)} 位移 ${safe.moved.toFixed(2)}`,
+  );
 }
 
 // 跳板：布置后踩上离地
@@ -133,7 +139,7 @@ function grow(kind: 'grow' | 'cake', from: number): number {
 say(grow('grow', 1) === 2 && grow('grow', 3) === 3, '体型果块', `1→${grow('grow', 1)} 满级 ${grow('grow', 3)}`);
 say(grow('cake', 1) === 2 && grow('cake', 2) === 3, '美味蛋糕', `1→${grow('cake', 1)} 2→${grow('cake', 2)}`);
 
-// 磁力：果冻块被吸近
+// 磁力：远处果冻块被吸过来，吃到后涨 1 级血量
 {
   const { s, me } = quiet();
   const blob = s.blobs[0];
@@ -143,17 +149,28 @@ say(grow('cake', 1) === 2 && grow('cake', 2) === 3, '美味蛋糕', `1→${grow(
   me.item = 'magnet';
   use(s);
   const dur = me.magnet;
-  run(s, sec(0.8));
-  say(me.item === null && dur > 4.5 && blob.x < 3.2, '磁力糖果', `持续 ${dur.toFixed(2)}s 果冻块 x ${blob.x.toFixed(2)}`);
+  run(s, sec(0.5));
+  const pulled = blob.x;
+  run(s, sec(1.5));
+  say(
+    me.item === null && near(dur, GAME.items.magnet.duration) && pulled < 3.2 && !blob.alive && me.level === 2,
+    '磁力糖果',
+    `持续 ${dur.toFixed(2)}s 0.5 秒后 x ${pulled.toFixed(2)} 吃到后 Lv${me.level}`,
+  );
 }
 
-// 香蕉皮：踩到后眩晕
+// 香蕉皮：沿面朝方向滑出一段，滑行中不受摇杆影响
 {
   const { s, me } = quiet();
   me.item = 'banana';
+  me.facing = 0;
+  me.vx = me.vy = 0;
   use(s);
-  run(s, sec(GAME.items.banana.arm + 0.1));
-  say(me.dizzy >= 1, '香蕉皮', `眩晕 ${me.dizzy.toFixed(2)}s`);
+  run(s, sec(GAME.items.banana.arm + 0.05));
+  const x0 = me.x;
+  const left = me.slipT;
+  run(s, sec(left), { x: -1, y: 0, charge: false });
+  say(left > 0.2 && me.x - x0 > left * GAME.items.banana.speed * 0.85, '香蕉皮', `滑行 ${(me.x - x0).toFixed(2)}`);
 }
 
 // 地雷：别人踩上被炸开
@@ -177,9 +194,10 @@ say(grow('cake', 1) === 2 && grow('cake', 2) === 3, '美味蛋糕', `1→${grow(
   say(!!mine && after > before + 8, '地雷', `炸开速度 ${after.toFixed(1)}`);
 }
 
-// 雪球：按下不消耗，冲刺命中后冻结
+// 雪球：按下不消耗，冲刺命中后把对方冻在原地，这一下不掉血
 {
   const { s, me, foe } = quiet();
+  setLevel(foe, 2);
   me.item = 'snow';
   use(s);
   const armed = me.item === 'snow' && me.gloveMul > 1;
@@ -187,22 +205,45 @@ say(grow('cake', 1) === 2 && grow('cake', 2) === 3, '美味蛋糕', `1→${grow(
   foe.x = me.radius + foe.radius - 0.05;
   foe.y = 0;
   foe.vx = foe.vy = 0;
-  dash(s, sec(0.5));
-  say(armed && foe.freezeT > 1.5 && me.item !== 'snow', '冰冻雪球', `冻结 ${foe.freezeT.toFixed(2)}s 手持 ${me.item}`);
+  dash(s, sec(1.2));
+  const x0 = foe.x;
+  run(s, sec(0.6), idle);
+  say(
+    armed && foe.freezeT > 0.8 && me.item !== 'snow' && foe.level === 2 && Math.abs(foe.x - x0) < 0.2,
+    '冰冻雪球',
+    `冻结剩 ${foe.freezeT.toFixed(2)}s 对方 Lv${foe.level} 冻住时位移 ${Math.abs(foe.x - x0).toFixed(2)}`,
+  );
 }
 
-// 能量星：移速和冲刺力度都更高
+// 能量星：轻轻一撞也让对方掉 1 级；自己被重撞不掉血
 {
-  const plain = quiet();
-  dash(plain.s, sec(0.8));
-  const baseDash = Math.hypot(plain.me.vx, plain.me.vy);
   const hot = quiet();
+  setLevel(hot.foe, 2);
   hot.me.item = 'star';
   use(hot.s);
   const dur = hot.me.star;
-  dash(hot.s, sec(0.8));
-  const starDash = Math.hypot(hot.me.vx, hot.me.vy);
-  say(hot.me.item === null && dur > 3.5 && starDash > baseDash * 1.2, '能量星', `持续 ${dur.toFixed(2)}s 冲刺 ${starDash.toFixed(1)} > ${baseDash.toFixed(1)}`);
+  hot.foe.freezeT = 0;
+  hot.foe.x = hot.me.radius + hot.foe.radius + 0.6;
+  hot.foe.y = 0;
+  dash(hot.s, 2);
+  run(hot.s, sec(0.3));
+  const foeLv = hot.foe.level;
+
+  const tank = quiet();
+  setLevel(tank.me, 2);
+  setLevel(tank.foe, 2);
+  tank.me.item = 'star';
+  use(tank.s);
+  tank.foe.freezeT = 0;
+  tank.foe.x = tank.me.radius + tank.foe.radius - 0.08;
+  tank.foe.y = 0;
+  tank.foe.vx = -28;
+  run(tank.s, 4);
+  say(
+    hot.me.item === null && near(dur, GAME.items.star.duration) && foeLv === 1 && tank.me.level === 2,
+    '能量星',
+    `持续 ${dur.toFixed(2)}s 轻撞后对方 Lv${foeLv} 自己被重撞后 Lv${tank.me.level}`,
+  );
 }
 
 // 拳套：按下留着，下一次冲刺击退更大，然后消耗
@@ -216,7 +257,7 @@ say(grow('cake', 1) === 2 && grow('cake', 2) === 3, '美味蛋糕', `1→${grow(
   const hot = quiet();
   hot.me.item = 'glove';
   use(hot.s);
-  const armed = hot.me.item === 'glove' && hot.me.gloveMul > 2;
+  const armed = hot.me.item === 'glove' && near(hot.me.gloveMul, GAME.items.glove.knockMul);
   hot.foe.freezeT = 0;
   hot.foe.x = hot.me.radius + hot.foe.radius - 0.05;
   hot.foe.y = 0;
