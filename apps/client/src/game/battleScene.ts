@@ -1,7 +1,7 @@
 /** 战斗场景渲染：只读 MatchState，负责插值、镜头、果冻形变和特效。 */
 import * as THREE from 'three';
 import { Arena } from './arena';
-import { playFx } from './audio';
+import { playFx, syncChargeCue } from './audio';
 import { BattlePropLayer } from './battleProps';
 import { GAME } from './config';
 import { ItemFx } from './itemFx';
@@ -120,6 +120,8 @@ export class BattleScene {
   /** alpha：固定步长之间的插值系数 */
   render(s: MatchState, alpha: number, dt: number, time: number): void {
     this.consumeFx(s);
+    const me = s.jellies.find((j) => j.isPlayer);
+    syncChargeCue(s.phase === 'play' && !!me?.alive && !!me.charging, (me?.charge ?? 0) / GAME.charge.maxTime);
     this.arena.update(s, dt, time);
     const topY = GAME.tile.height / 2;
     let player = s.jellies[0];
@@ -257,6 +259,7 @@ export class BattleScene {
   }
 
   dispose(): void {
+    syncChargeCue(false, 0);
     this.views.forEach((v) => v.obj.dispose());
     this.arena.dispose();
     this.props.dispose();

@@ -1,6 +1,6 @@
 /** 冲撞按钮：按住蓄力，松手冲刺。外圈显示蓄力进度。 */
 import { useRef, type PointerEvent } from 'react';
-import { sfx, unlockAudio } from '../game/audio';
+import { unlockAudio } from '../game/audio';
 import type { InputSource } from '../game/input';
 import { IconFist } from './icons';
 
@@ -11,7 +11,6 @@ export function DashButton({ input, charge }: { input: InputSource; charge: numb
     pointer.current = e.pointerId;
     e.currentTarget.setPointerCapture(e.pointerId);
     unlockAudio();
-    sfx.charge();
     input.dashHeld = true;
   };
   const release = (e: PointerEvent<HTMLButtonElement>) => {

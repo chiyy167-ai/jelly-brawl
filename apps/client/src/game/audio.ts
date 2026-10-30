@@ -78,6 +78,7 @@ export function isBgmMuted(): boolean {
 
 export function setMuted(v: boolean): void {
   muted = v;
+  if (v) stopChargeCue();
   try {
     localStorage.setItem(MUTE_KEY, v ? '1' : '0');
   } catch {
@@ -111,8 +112,47 @@ function tone(freq: number, dur: number, type: OscillatorType, gain: number, sli
   osc.stop(t + dur + 0.02);
 }
 
+let chargeOsc: OscillatorNode | null = null;
+let chargeAmp: GainNode | null = null;
+let chargeFull = false;
+
+function stopChargeCue(): void {
+  const osc = chargeOsc;
+  const amp = chargeAmp;
+  chargeOsc = null;
+  chargeAmp = null;
+  chargeFull = false;
+  if (!osc || !amp || !ctx) return;
+  const t = ctx.currentTime;
+  amp.gain.cancelScheduledValues(t);
+  amp.gain.setValueAtTime(Math.max(0.0001, amp.gain.value), t);
+  amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+  osc.stop(t + 0.06);
+}
+
+/** 按住蓄力时持续升调，蓄满叮一声。松手或静音立刻停。 */
+export function syncChargeCue(charging: boolean, amount: number): void {
+  if (!charging || muted) { stopChargeCue(); return; }
+  unlockAudio();
+  const audio = ac();
+  if (!chargeOsc || !chargeAmp) {
+    chargeOsc = audio.createOscillator();
+    chargeAmp = audio.createGain();
+    chargeOsc.type = 'triangle';
+    chargeOsc.frequency.value = 220;
+    chargeAmp.gain.value = 0.0001;
+    chargeOsc.connect(chargeAmp).connect(output());
+    chargeOsc.start();
+    chargeFull = false;
+  }
+  const k = Math.min(1, Math.max(0, amount));
+  const t = audio.currentTime;
+  chargeOsc.frequency.setTargetAtTime(220 * 3 ** k, t, 0.04);
+  chargeAmp.gain.setTargetAtTime(0.032, t, 0.03);
+  if (k >= 0.99 && !chargeFull) { chargeFull = true; tone(980, 0.08, 'square', 0.04); }
+}
+
 export const sfx = {
-  charge: () => tone(180, 0.16, 'sawtooth', 0.035, 520),
   dash: () => tone(260, 0.14, 'triangle', 0.07, 90),
   hit: () => tone(150, 0.1, 'square', 0.05, 70),
   heavy: () => {

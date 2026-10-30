@@ -1,4 +1,5 @@
 /** 战斗主循环：60Hz 固定步长推进逻辑，requestAnimationFrame 插值渲染。 */
+import { syncChargeCue } from './audio';
 import { consumeEquipped } from '../state/loadout';
 import { loadOutfit } from '../state/outfit';
 import { BattleScene } from './battleScene';
@@ -116,6 +117,7 @@ export class BattleRunner {
 
   setPaused(p: boolean): void {
     this.paused = p;
+    if (p) syncChargeCue(false, 0);
   }
 
   setHighView(high: boolean): void {
