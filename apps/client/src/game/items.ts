@@ -198,6 +198,8 @@ function tickHazards(s: MatchState, dt: number): void {
     if (h.arm > 0) continue;
     for (const j of s.jellies) {
       if (!j.alive || j.airT > 0) continue;
+      // 香蕉皮和地雷是给对手的，放的人自己踩不中；跳板本来就是给自己用的
+      if (h.kind !== 'pad' && j.id === h.ownerId) continue;
       const reach = j.radius + h.radius;
       if ((j.x - h.x) ** 2 + (j.y - h.y) ** 2 > reach * reach) continue;
       if (h.kind === 'pad') triggerPad(s, j, h);

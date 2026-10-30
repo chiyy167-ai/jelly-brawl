@@ -159,18 +159,29 @@ say(grow('cake', 1) === 2 && grow('cake', 2) === 3, '美味蛋糕', `1→${grow(
   );
 }
 
-// 香蕉皮：沿面朝方向滑出一段，滑行中不受摇杆影响
+// 香蕉皮：自己踩不中；对手踩上沿前进方向滑出一段，滑行中不受操作
 {
-  const { s, me } = quiet();
+  const { s, me, foe } = quiet();
   me.item = 'banana';
-  me.facing = 0;
-  me.vx = me.vy = 0;
   use(s);
-  run(s, sec(GAME.items.banana.arm + 0.05));
-  const x0 = me.x;
-  const left = me.slipT;
-  run(s, sec(left), { x: -1, y: 0, charge: false });
-  say(left > 0.2 && me.x - x0 > left * GAME.items.banana.speed * 0.85, '香蕉皮', `滑行 ${(me.x - x0).toFixed(2)}`);
+  run(s, sec(GAME.items.banana.arm + 0.3));
+  const selfSafe = me.slipT === 0 && s.hazards.some((h) => h.kind === 'banana');
+  me.x = 0;
+  me.y = -5;
+  foe.freezeT = 0;
+  foe.x = 0;
+  foe.y = 0;
+  foe.vx = 2;
+  foe.vy = 0;
+  run(s, 2);
+  const x0 = foe.x;
+  const left = foe.slipT;
+  run(s, sec(left));
+  say(
+    selfSafe && left > 0.2 && foe.x - x0 > left * GAME.items.banana.speed * 0.85,
+    '香蕉皮',
+    `自己踩不中 ${selfSafe} 对手滑行 ${(foe.x - x0).toFixed(2)}`,
+  );
 }
 
 // 地雷：别人踩上被炸开
@@ -179,9 +190,11 @@ say(grow('cake', 1) === 2 && grow('cake', 2) === 3, '美味蛋糕', `1→${grow(
   me.item = 'mine';
   use(s);
   const mine = s.hazards.find((h) => h.kind === 'mine');
+  run(s, sec(GAME.items.mine.arm + 0.3));
+  const selfSafe = s.hazards.includes(mine!) && Math.hypot(me.vx, me.vy) < 1;
+  if (!selfSafe) fails.push('地雷炸到自己');
   me.x = 5;
   me.y = 0;
-  run(s, sec(GAME.items.mine.arm + 0.05));
   if (mine) {
     foe.freezeT = 0;
     foe.x = mine.x;
@@ -273,6 +286,15 @@ say(grow('cake', 1) === 2 && grow('cake', 2) === 3, '美味蛋糕', `1→${grow(
   me.itemB = 'rocket';
   use(s);
   say(me.shield > 0 && me.item === 'rocket' && me.itemB === null, '双槽递补', `${me.item}/${me.itemB} 盾 ${me.shield.toFixed(2)}`);
+}
+
+// 重撞顿帧期间按释放，不能被吞掉
+{
+  const { s, me } = quiet();
+  me.item = 'shield';
+  s.hitStop = 0.08;
+  use(s);
+  say(me.shield > 0 && me.item === null, '顿帧释放', `盾 ${me.shield.toFixed(2)}`);
 }
 
 // 开箱会进空槽，并带上道具特效

@@ -271,6 +271,8 @@ export function stepMatch(s: MatchState, inputs: Record<number, InputCmd>, dt: n
 
   if (s.hitStop > 0) {
     s.hitStop -= dt;
+    // 顿帧时画面停住，但技能 / 切换按键照常生效，否则这一下会被吞掉
+    itemCmds(s, inputs);
     return;
   }
 
@@ -290,17 +292,10 @@ export function stepMatch(s: MatchState, inputs: Record<number, InputCmd>, dt: n
   }
   tickItems(s, dt);
   thinkAi(s, dt);
+  itemCmds(s, inputs);
   for (const j of s.jellies) {
     if (!j.alive) continue;
     const cmd = j.human ? (inputs[j.id] ?? IDLE) : j.wish;
-    if (cmd.swap) {
-      swapHeld(j);
-      if (cmd !== IDLE) cmd.swap = false;
-    }
-    if (cmd.use) {
-      useHeldItem(s, j);
-      if (cmd !== IDLE) cmd.use = false;
-    }
     steer(j, cmd, dt, s.fx);
     integrate(j, dt, s.frictionScale);
   }
@@ -312,6 +307,17 @@ export function stepMatch(s: MatchState, inputs: Record<number, InputCmd>, dt: n
 
   const alive = s.jellies.filter((j) => j.alive).length;
   if (s.time >= GAME.platform.roundTime || alive <= 1) finishRound(s);
+}
+
+/** 处理释放 / 切换道具按键，读走后清掉 */
+function itemCmds(s: MatchState, inputs: Record<number, InputCmd>): void {
+  for (const j of s.jellies) {
+    if (!j.alive) continue;
+    const cmd = j.human ? (inputs[j.id] ?? IDLE) : j.wish;
+    if (cmd === IDLE) continue;
+    if (cmd.swap) { swapHeld(j); cmd.swap = false; }
+    if (cmd.use) { useHeldItem(s, j); cmd.use = false; }
+  }
 }
 
 /** 系列赛最终排名：按累计分；同分比本局 kos、再比 id。 */

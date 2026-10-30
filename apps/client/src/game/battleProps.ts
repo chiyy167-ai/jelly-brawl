@@ -3,12 +3,12 @@ import * as THREE from 'three';
 import { GAME } from './config';
 import { HAZARD_COLORS, ITEM_COLORS } from './maps';
 import { cloneProp, hazardPropId, propsReady, type PropId } from './propModels';
-import type { Jelly, MatchState } from './types';
+import type { MatchState } from './types';
 
+/** 神秘箱、地面陷阱和幽灵布丁。果冻身上的道具在 battleBuffs.ts。 */
 export class BattlePropLayer {
   private boxes: THREE.Object3D[] = [];
   private hazards: THREE.Object3D[] = [];
-  private buffs = new Map<number, { id: PropId; root: THREE.Object3D }>();
   private pudMeshes: THREE.Mesh[] = [];
   private pudGeo = new THREE.SphereGeometry(GAME.ghost.puddingRadius, 14, 10);
   private owned: { dispose(): void }[] = [this.pudGeo];
@@ -18,14 +18,11 @@ export class BattlePropLayer {
   update(s: MatchState, time: number, topY: number): void {
     this.syncBoxes(s, time, topY);
     this.syncHazards(s, time, topY);
-    this.syncBuffs(s, time, topY);
     this.syncPuds(s, topY);
   }
 
   dispose(): void {
     for (const o of [...this.boxes, ...this.hazards]) this.scene.remove(o);
-    for (const b of this.buffs.values()) this.scene.remove(b.root);
-    this.buffs.clear();
     this.pudMeshes.forEach((m) => this.scene.remove(m));
     this.owned.forEach((o) => o.dispose());
   }
@@ -94,53 +91,6 @@ export class BattlePropLayer {
     for (let i = s.hazards.length; i < this.hazards.length; i += 1) this.hazards[i].visible = false;
   }
 
-  private syncBuffs(s: MatchState, time: number, topY: number): void {
-    const live = new Set<number>();
-    for (const j of s.jellies) {
-      const id = buffProp(j);
-      if (!id || !j.alive) {
-        const old = this.buffs.get(j.id);
-        if (old) {
-          this.scene.remove(old.root);
-          this.buffs.delete(j.id);
-        }
-        continue;
-      }
-      live.add(j.id);
-      let entry = this.buffs.get(j.id);
-      const stale = entry && entry.id === id && entry.root.userData.propId !== id && propsReady();
-      if (!entry || entry.id !== id || stale) {
-        if (entry) this.scene.remove(entry.root);
-        const root = this.makeProp(id, ITEM_COLORS[id] ?? 0xffffff);
-        this.scene.add(root);
-        entry = { id, root };
-        this.buffs.set(j.id, entry);
-      }
-      const bob = Math.sin(time * 5 + j.id) * 0.12;
-      const x = j.prevX + (j.x - j.prevX) * 0.5;
-      const z = j.prevY + (j.y - j.prevY) * 0.5;
-      if (id === 'shield') {
-        entry.root.position.set(x, topY + j.fallY, z);
-      } else if (id === 'rocket') {
-        entry.root.position.set(
-          x - Math.cos(j.facing) * (j.radius + 0.55),
-          topY + j.fallY + j.radius * 0.6 + bob,
-          z - Math.sin(j.facing) * (j.radius + 0.55),
-        );
-        entry.root.rotation.y = -j.facing + Math.PI / 2;
-      } else {
-        entry.root.position.set(x, topY + j.fallY + j.radius * 1.6 + bob, z);
-        entry.root.rotation.y = time * 2;
-      }
-    }
-    for (const id of [...this.buffs.keys()]) {
-      if (live.has(id)) continue;
-      const e = this.buffs.get(id)!;
-      this.scene.remove(e.root);
-      this.buffs.delete(id);
-    }
-  }
-
   private syncPuds(s: MatchState, topY: number): void {
     const puds = s.puddings.filter((p) => p.alive);
     while (this.pudMeshes.length < puds.length) {
@@ -157,14 +107,4 @@ export class BattlePropLayer {
       m.position.set(p.prevX + (p.x - p.prevX) * 0.5, topY + 0.55, p.prevY + (p.y - p.prevY) * 0.5);
     });
   }
-}
-
-function buffProp(j: Jelly): PropId | null {
-  if (j.item) return j.item;
-  if (j.shield > 0) return 'shield';
-  if (j.rocket > 0) return 'rocket';
-  if (j.star > 0) return 'star';
-  if (j.magnet > 0) return 'magnet';
-  if (j.freezeT > 0) return 'snow';
-  return null;
 }

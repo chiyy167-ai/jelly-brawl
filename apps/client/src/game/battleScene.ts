@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { Arena } from './arena';
 import { playFx, syncChargeCue } from './audio';
+import { BattleBuffLayer } from './battleBuffs';
 import { BattlePropLayer } from './battleProps';
 import { GAME } from './config';
 import { ItemFx } from './itemFx';
@@ -41,6 +42,7 @@ export class BattleScene {
   private marker: THREE.Mesh;
   private chargeRing: THREE.Mesh;
   private props: BattlePropLayer;
+  private buffs: BattleBuffLayer;
   private itemFx: ItemFx;
   private camPos = new THREE.Vector3();
   private high = false;
@@ -101,6 +103,7 @@ export class BattleScene {
     this.chargeRing.rotation.x = -Math.PI / 2;
     this.scene.add(this.chargeRing);
     this.props = new BattlePropLayer(this.scene);
+    this.buffs = new BattleBuffLayer(this.scene);
     this.itemFx = new ItemFx(this.scene);
     this.owned.push(
       blobGeo, sparkGeo, sparkMat, markerMat, this.marker.geometry, ringMat, this.chargeRing.geometry,
@@ -176,6 +179,7 @@ export class BattleScene {
     this.updateSparks(dt);
     this.itemFx.update(dt);
     this.props.update(s, time, topY);
+    this.buffs.update(s, time, topY);
     this.updatePlayerMarks(player, time, topY);
     this.updateCamera(player, s.shake);
     renderIfOk(this.renderer, this.scene, this.camera);
@@ -263,6 +267,7 @@ export class BattleScene {
     this.views.forEach((v) => v.obj.dispose());
     this.arena.dispose();
     this.props.dispose();
+    this.buffs.dispose();
     this.itemFx.dispose();
     this.owned.forEach((o) => o.dispose());
     this.renderer.dispose();
