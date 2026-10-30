@@ -1,6 +1,6 @@
-/** 换装 3D 占位：眼睛 / 嘴巴 / 头饰。用基础几何体，后续可换成 glb。 */
+/** 换装 3D 占位：只贴头饰。眼睛和嘴巴用模型原有的。 */
 import * as THREE from 'three';
-import type { EyeId, GearId, MouthId } from '../data/cosmetics';
+import type { GearId } from '../data/cosmetics';
 
 function std(color: number, extra: Partial<THREE.MeshStandardMaterialParameters> = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.08, ...extra });
@@ -15,99 +15,6 @@ function add(
   m.castShadow = true;
   g.add(m);
   return m;
-}
-
-/** 眼白 + 瞳孔，盖住原模型贴图五官 */
-export function buildEyes(style: EyeId, h: number, d: number): THREE.Group {
-  const g = new THREE.Group();
-  const z = d * 0.52;
-  const y = h * 0.58;
-  const white = std(0xfff8f0);
-  const black = std(0x1a1520, { roughness: 0.2 });
-  const gap = style === 'big' ? 0.16 : 0.13;
-  const r = style === 'big' ? 0.11 : style === 'square' ? 0.09 : 0.085;
-
-  if (style === 'cool') {
-    const frame = std(0x15151c, { roughness: 0.15, metalness: 0.45 });
-    const lens = new THREE.CylinderGeometry(0.1, 0.1, 0.03, 20);
-    add(g, lens, frame, -gap, y, z).rotation.x = Math.PI / 2;
-    add(g, lens.clone(), frame, gap, y, z).rotation.x = Math.PI / 2;
-    add(g, new THREE.BoxGeometry(0.1, 0.02, 0.02), frame, 0, y + 0.02, z);
-    return g;
-  }
-
-  const makeEye = (sx: number, closed = false) => {
-    if (closed) {
-      add(g, new THREE.BoxGeometry(0.14, 0.025, 0.02), black, sx, y, z);
-      return;
-    }
-    if (style === 'square') {
-      add(g, new THREE.BoxGeometry(r * 2, r * 2, 0.04), std(0x7dffb0, { emissive: 0x1a6040 }), sx, y, z);
-      add(g, new THREE.BoxGeometry(r * 0.7, r * 0.7, 0.045), black, sx, y, z + 0.01);
-      return;
-    }
-    if (style === 'sleepy') {
-      add(g, new THREE.SphereGeometry(r, 14, 10), white, sx, y, z).scale.set(1, 0.45, 0.7);
-      add(g, new THREE.SphereGeometry(r * 0.35, 10, 8), black, sx, y - 0.01, z + 0.03);
-      return;
-    }
-    const sclera = add(g, new THREE.SphereGeometry(r, 14, 10), white, sx, y, z);
-    if (style === 'angry') sclera.scale.set(1, 0.75, 0.85);
-    const pr = style === 'cat' ? r * 0.28 : r * 0.42;
-    const pupil = add(g, new THREE.SphereGeometry(pr, 10, 8), black, sx, y, z + 0.035);
-    if (style === 'cat') pupil.scale.set(0.55, 1.35, 1);
-    if (style === 'star' || style === 'sparkle') {
-      add(g, starGeo(r * 0.45), std(0xffd84a, { emissive: 0x806000 }), sx + 0.02, y + 0.02, z + 0.05);
-    }
-    if (style === 'sparkle') {
-      add(g, new THREE.SphereGeometry(0.015, 6, 6), std(0xffffff), sx - 0.03, y + 0.03, z + 0.05);
-    }
-  };
-
-  makeEye(-gap, style === 'wink');
-  makeEye(gap, false);
-  if (style === 'angry') {
-    add(g, new THREE.BoxGeometry(0.12, 0.025, 0.02), black, -gap, y + 0.08, z).rotation.z = 0.35;
-    add(g, new THREE.BoxGeometry(0.12, 0.025, 0.02), black, gap, y + 0.08, z).rotation.z = -0.35;
-  }
-  return g;
-}
-
-export function buildMouth(style: MouthId, h: number, d: number): THREE.Group {
-  const g = new THREE.Group();
-  const z = d * 0.5;
-  const y = h * 0.36;
-  const lip = std(0x2a1830);
-  const pink = std(0xff6b8a);
-
-  if (style === 'flat') {
-    add(g, new THREE.BoxGeometry(0.16, 0.025, 0.02), lip, 0, y, z);
-  } else if (style === 'ooh') {
-    add(g, new THREE.TorusGeometry(0.05, 0.018, 8, 16), lip, 0, y, z);
-  } else if (style === 'open' || style === 'grin') {
-    const w = style === 'grin' ? 0.18 : 0.14;
-    add(g, new THREE.SphereGeometry(0.07, 12, 8), lip, 0, y, z).scale.set(w / 0.07, 0.7, 0.5);
-    add(g, new THREE.SphereGeometry(0.045, 10, 6), pink, 0, y - 0.01, z + 0.02).scale.set(1.2, 0.6, 0.5);
-  } else if (style === 'frown') {
-    add(g, new THREE.TorusGeometry(0.07, 0.016, 8, 12, Math.PI), lip, 0, y + 0.04, z).rotation.z = Math.PI;
-  } else if (style === 'cat') {
-    add(g, new THREE.SphereGeometry(0.035, 10, 8), lip, 0, y, z).scale.set(1.4, 0.7, 0.6);
-    add(g, new THREE.BoxGeometry(0.04, 0.015, 0.015), lip, -0.05, y + 0.02, z).rotation.z = 0.5;
-    add(g, new THREE.BoxGeometry(0.04, 0.015, 0.015), lip, 0.05, y + 0.02, z).rotation.z = -0.5;
-  } else if (style === 'tongue') {
-    add(g, new THREE.SphereGeometry(0.06, 12, 8), lip, 0, y, z).scale.set(1.5, 0.55, 0.5);
-    add(g, new THREE.SphereGeometry(0.035, 10, 8), pink, 0, y - 0.04, z + 0.02).scale.set(0.8, 1.2, 0.6);
-  } else if (style === 'smirk') {
-    add(g, new THREE.TorusGeometry(0.07, 0.015, 8, 12, Math.PI * 0.7), lip, 0.02, y, z).rotation.z = -0.2;
-  } else if (style === 'shy') {
-    add(g, new THREE.TorusGeometry(0.05, 0.014, 8, 12, Math.PI), lip, 0, y, z);
-    add(g, new THREE.SphereGeometry(0.03, 8, 6), std(0xff8aaa), -0.14, y + 0.02, z - 0.02);
-    add(g, new THREE.SphereGeometry(0.03, 8, 6), std(0xff8aaa), 0.14, y + 0.02, z - 0.02);
-  } else {
-    // smile
-    add(g, new THREE.TorusGeometry(0.08, 0.016, 8, 14, Math.PI), lip, 0, y, z);
-  }
-  return g;
 }
 
 /** 头上 / 额前道具（含旧皮肤配件） */

@@ -1,4 +1,4 @@
-/** 本机换装：眼睛 / 嘴巴 / 头饰。 */
+/** 本机换装：目前只显示头饰。眼睛和嘴巴留在存档里，不再画出来。 */
 import { cleanLook, DEFAULT_LOOK, type CosmeticLook } from '../data/cosmetics';
 
 const KEY = 'jelly-brawl.outfit';

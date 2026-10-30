@@ -104,5 +104,5 @@ export function cleanLook(raw: Partial<CosmeticLook> | undefined | null): Cosmet
 }
 
 export function lookKey(look: CosmeticLook): string {
-  return `${look.eye}:${look.mouth}:${look.gear}`;
+  return `${look.mouth}:${look.gear}`;
 }

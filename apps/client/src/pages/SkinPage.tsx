@@ -1,4 +1,4 @@
-/** 皮肤体色 + 换装（眼睛 / 嘴巴 / 头饰）。 */
+/** 皮肤体色 + 换装（头饰）。眼睛和嘴巴用模型原有的。 */
 import { useMemo, useState } from 'react';
 import { JellyStageView } from '../components/JellyStageView';
 import { OutfitPanel } from '../components/OutfitPanel';
@@ -51,7 +51,7 @@ export function SkinPage() {
       {main === 'outfit' ? (
         <div className="skin-body">
           <OutfitPanel skinId={state.skinId} />
-          <p className="skin-foot">五官与头饰为首版程序化模型占位，后续可换成独立 glb。体色在另一页签。</p>
+          <p className="skin-foot">眼睛和嘴巴用模型原来的。头饰是程序化占位，后续可换成独立 glb。体色在另一页签。</p>
         </div>
       ) : (
         <div className="skin-body">

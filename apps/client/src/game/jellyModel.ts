@@ -1,10 +1,10 @@
-/** 根据皮肤 + 换装生成果冻 3D 对象：共用模型网格，换色 + 五官/头饰。 */
+/** 根据皮肤 + 换装生成果冻 3D 对象：共用模型网格，换色 + 头饰。 */
 import * as THREE from 'three';
 import { cleanLook, DEFAULT_LOOK, type CosmeticLook, type GearId } from '../data/cosmetics';
 import { getSkin, type Accessory, type Skin } from '../data/skins';
 import type { JellyLook } from './types';
 import { getJellyTemplate } from './assets';
-import { buildEyes, buildGear, buildMouth } from './jellyCosmetics';
+import { buildGear } from './jellyCosmetics';
 
 /** 模型正面朝向修正（弧度），让果冻默认面向 +Z */
 export const MODEL_YAW = 0;
@@ -56,7 +56,7 @@ export function lookForSkin(skinId: string, look?: CosmeticLook | JellyLook | nu
   return { ...DEFAULT_LOOK, gear: gear === 'none' ? 'none' : gear };
 }
 
-/** 创建一个果冻：root 摆位置，body 朝向/形变；look 控制五官与头饰。 */
+/** 创建一个果冻：root 摆位置，body 朝向/形变。眼睛和嘴巴用模型原有的。 */
 export function createJelly(skinId: string, look?: CosmeticLook | JellyLook | null): JellyObject {
   const tpl = getJellyTemplate();
   const skin = getSkin(skinId);
@@ -67,11 +67,7 @@ export function createJelly(skinId: string, look?: CosmeticLook | JellyLook | nu
   const body = new THREE.Group();
   body.add(mesh);
   const resolved = lookForSkin(skinId, look);
-  const parts = [
-    buildEyes(resolved.eye, tpl.height, tpl.depth),
-    buildMouth(resolved.mouth, tpl.height, tpl.depth),
-    buildGear(resolved.gear, tpl.height, tpl.depth),
-  ];
+  const parts = [buildGear(resolved.gear, tpl.height, tpl.depth)];
   for (const p of parts) if (p) body.add(p);
   const root = new THREE.Group();
   root.add(body);

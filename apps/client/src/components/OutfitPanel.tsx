@@ -1,7 +1,7 @@
-/** 换装面板：10 套预设 + 眼睛 / 嘴巴 / 头饰分项。 */
+/** 换装面板：套装和头饰。眼睛、嘴巴用模型原有的。 */
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import {
-  EYES, GEARS, MOUTHS, OUTFITS, lookFromOutfit, lookKey, type CosmeticLook,
+  GEARS, OUTFITS, lookFromOutfit, lookKey, type CosmeticLook,
 } from '../data/cosmetics';
 import { JellyStageView } from './JellyStageView';
 import { loadOutfit, outfitVersion, saveOutfit, subscribeOutfit } from '../state/outfit';
@@ -12,7 +12,7 @@ export function OutfitPanel({ skinId }: { skinId: string }) {
   useSyncExternalStore(subscribeOutfit, outfitVersion, outfitVersion);
   const saved = loadOutfit();
   const [draft, setDraft] = useState<CosmeticLook>(saved);
-  const [tab, setTab] = useState<'set' | 'eye' | 'mouth' | 'gear'>('set');
+  const [tab, setTab] = useState<'set' | 'gear'>('set');
   const dirty = lookKey(draft) !== lookKey(saved);
 
   const stage = useMemo(
@@ -28,7 +28,7 @@ export function OutfitPanel({ skinId }: { skinId: string }) {
         <JellyStageView className="skin-stage" items={stage} view={VIEW} draggable />
         <div className="skin-info">
           <div className="skin-name"><b>我的换装</b></div>
-          <p>眼睛、嘴巴和头饰可分开挑，也可一键套用下方 10 套造型。</p>
+          <p>眼睛和嘴巴用角色模型原来的。这里只换头饰，也可以一键套用造型。</p>
           <button
             className={`btn ${dirty ? 'btn-yellow' : 'btn-gray'}`}
             disabled={!dirty}
@@ -42,8 +42,6 @@ export function OutfitPanel({ skinId }: { skinId: string }) {
       <nav className="skin-tabs outfit-tabs" aria-label="换装分类">
         {([
           ['set', '套装'],
-          ['eye', '眼睛'],
-          ['mouth', '嘴巴'],
           ['gear', '道具'],
         ] as const).map(([id, label]) => (
           <button key={id} type="button" className={`skin-tab ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>
@@ -72,24 +70,6 @@ export function OutfitPanel({ skinId }: { skinId: string }) {
         </div>
       )}
 
-      {tab === 'eye' && (
-        <div className="outfit-chips">
-          {EYES.map((e) => (
-            <button key={e.id} type="button" className={draft.eye === e.id ? 'on' : ''} onClick={() => apply({ eye: e.id })}>
-              {e.name}
-            </button>
-          ))}
-        </div>
-      )}
-      {tab === 'mouth' && (
-        <div className="outfit-chips">
-          {MOUTHS.map((m) => (
-            <button key={m.id} type="button" className={draft.mouth === m.id ? 'on' : ''} onClick={() => apply({ mouth: m.id })}>
-              {m.name}
-            </button>
-          ))}
-        </div>
-      )}
       {tab === 'gear' && (
         <div className="outfit-chips">
           {GEARS.map((g) => (
